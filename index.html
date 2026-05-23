@@ -1316,8 +1316,15 @@ function renderTable() {
       <td>
         <div class="contact-cell">${web}${phone}${li}</div>
       </td>
-      <td>${chatBadge}<div style="margin-top:0.3rem">${ptags}</div></td>
+      <td>${chatBadge}</td>
+      <td style="min-width:140px">${ptags || '<span style="color:var(--text3);font-size:0.72rem">—</span>'}</td>
       <td>
+        <select class="stage-sel" onchange="setStage(${globalIdx},this.value)">
+          ${stageOpts}
+        </select>
+      </td>
+      <td>${hsBtn}</td>
+    </tr>`;
         <select class="stage-sel" onchange="setStage(${globalIdx},this.value)">
           ${stageOpts}
         </select>
@@ -1334,7 +1341,8 @@ function renderTable() {
           <th style="width:38px">Score</th>
           <th>Company</th>
           <th>Contact</th>
-          <th>Chat Status</th>
+          <th style="width:140px">Chat Status</th>
+          <th style="width:160px">Platform Detected</th>
           <th style="width:160px">Stage</th>
           <th style="width:110px">HubSpot</th>
         </tr>
