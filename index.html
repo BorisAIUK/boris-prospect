@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boris.Prospect — Sales Research</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #080b12;
+  --surface: #0d1117;
+  --surface2: #131920;
+  --surface3: #1a2233;
+  --border: #1e2a3a;
+  --border2: #243044;
+  --accent: #3b82f6;
+  --accent-dim: rgba(59,130,246,0.12);
+  --accent-glow: 0 0 24px rgba(59,130,246,0.2);
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.12);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --purple: #a855f7;
+  --purple-dim: rgba(168,85,247,0.12);
+  --cyan: #06b6d4;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(rgba(59,130,246,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,11,18,0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex; align-items: center; height: 52px; gap: 1.5rem;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 1.1rem; font-weight: 800;
+  letter-spacing: -0.03em; white-space: nowrap;
+}
+.logo em { color: var(--accent); font-style: normal; }
+.logo-sub {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--text3); letter-spacing: 0.15em;
+  text-transform: uppercase; margin-top: -2px;
+}
+
+.header-tabs { display: flex; gap: 2px; }
+.tab {
+  font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+  padding: 0.35rem 0.9rem; border-radius: 6px; border: none;
+  background: transparent; color: var(--text3); cursor: pointer;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--accent); background: var(--accent-dim); }
+
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+.date-badge {
+  font-family: var(--mono); font-size: 0.68rem; color: var(--text3);
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 0.25rem 0.6rem; border-radius: 4px;
+}
+
+/* ── PAGES ── */
+.page { display: none; position: relative; z-index: 1; }
+.page.active { display: block; }
+
+/* ── SETUP PAGE ── */
+.setup-page {
+  max-width: 700px; margin: 0 auto; padding: 3rem 1.5rem;
+}
+
+.setup-hero { margin-bottom: 2.5rem; }
+.setup-title {
+  font-family: var(--display); font-size: 2rem; font-weight: 800;
+  letter-spacing: -0.04em; margin-bottom: 0.5rem;
+}
+.setup-title em { color: var(--accent); font-style: normal; }
+.setup-sub { color: var(--text2); font-size: 0.9rem; line-height: 1.6; }
+
+.setup-steps { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.step-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; position: relative;
+  transition: border-color 0.2s;
+}
+.step-card:hover { border-color: var(--border2); }
+.step-card.done { border-color: rgba(34,197,94,0.3); }
+
+.step-num {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--accent);
+  letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.4rem;
+}
+.step-title {
+  font-family: var(--display); font-size: 1rem; font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.step-desc {
+  font-size: 0.82rem; color: var(--text2); line-height: 1.6;
+  margin-bottom: 1rem;
+}
+.step-desc a { color: var(--accent); }
+.step-desc code {
+  background: var(--surface3); padding: 0.1rem 0.4rem;
+  border-radius: 3px; font-family: var(--mono); font-size: 0.78rem;
+  color: var(--cyan);
+}
+
+.input-row { display: flex; gap: 0.5rem; }
+.api-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+  padding: 0.6rem 0.9rem; border-radius: 8px; outline: none;
+  transition: border-color 0.15s;
+}
+.api-input:focus { border-color: var(--accent); }
+.api-input::placeholder { color: var(--text3); }
+.api-input.valid { border-color: var(--green); }
+
+.check-icon {
+  position: absolute; top: 1.25rem; right: 1.25rem;
+  font-size: 1.1rem; display: none;
+}
+.step-card.done .check-icon { display: block; }
+
+.instructions {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem 1.1rem;
+  font-size: 0.78rem; line-height: 1.8; color: var(--text2);
+  margin-bottom: 1rem;
+}
+.instructions ol { padding-left: 1.2rem; }
+.instructions li { margin-bottom: 0.2rem; }
+.instructions strong { color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: var(--sans); font-size: 0.82rem; font-weight: 600;
+  padding: 0.55rem 1.2rem; border-radius: 8px; border: none;
+  cursor: pointer; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #2563eb; box-shadow: var(--accent-glow); }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.btn-outline:hover:not(:disabled) { border-color: var(--text3); background: var(--surface2); }
+.btn-green { background: var(--green); color: #000; font-weight: 700; }
+.btn-green:hover:not(:disabled) { background: #16a34a; }
+.btn-ghost { background: transparent; color: var(--text3); border: 1px solid transparent; }
+.btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--surface2); }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.75rem; border-radius: 6px; }
+.btn-xs { padding: 0.25rem 0.55rem; font-size: 0.7rem; border-radius: 5px; }
+
+/* ── DASHBOARD PAGE ── */
+.dash-page { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+/* Search panel */
+.search-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;
+}
+
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field-label {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+.field-input {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--sans); font-size: 0.85rem;
+  padding: 0.55rem 0.9rem; border-radius: 8px; outline: none;
+  transition: border-color 0.15s; min-width: 180px;
+}
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--text3); }
+
+.field-select {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--sans); font-size: 0.85rem;
+  padding: 0.55rem 0.9rem; border-radius: 8px; outline: none;
+  cursor: pointer; min-width: 180px;
+}
+.field-select:focus { border-color: var(--accent); }
+
+.search-divider {
+  width: 1px; background: var(--border); align-self: stretch;
+  margin: 0 0.25rem;
+}
+
+/* Progress */
+.progress-wrap {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem; display: none;
+}
+.progress-bar { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; margin-bottom: 0.5rem; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan)); border-radius: 2px; transition: width 0.4s ease; }
+.progress-meta { display: flex; justify-content: space-between; }
+.progress-label { font-family: var(--mono); font-size: 0.68rem; color: var(--text3); }
+
+/* KPIs */
+.kpi-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem; margin-bottom: 1.25rem;
+}
+.kpi {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem 1.1rem;
+}
+.kpi-label { font-family: var(--mono); font-size: 0.6rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.35rem; }
+.kpi-val { font-family: var(--display); font-size: 1.9rem; font-weight: 800; line-height: 1; }
+.kpi-sub { font-size: 0.68rem; color: var(--text3); margin-top: 0.2rem; }
+.c-green { color: var(--green); }
+.c-amber { color: var(--amber); }
+.c-blue  { color: var(--accent); }
+.c-red   { color: var(--red); }
+.c-muted { color: var(--text3); }
+.c-text  { color: var(--text); }
+
+/* Filters */
+.filter-bar {
+  display: flex; gap: 0.4rem; margin-bottom: 1rem;
+  flex-wrap: wrap; align-items: center;
+}
+.chip {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 500;
+  padding: 0.28rem 0.75rem; border-radius: 20px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--text3); cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { color: var(--text); border-color: var(--text3); }
+.chip.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+.chip.c-green-chip { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+.chip.c-amber-chip { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
+.chip.c-blue-chip  { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+.filter-right { margin-left: auto; display: flex; gap: 0.5rem; }
+.search-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--sans); font-size: 0.82rem;
+  padding: 0.32rem 0.8rem; border-radius: 7px; outline: none;
+  width: 200px; transition: border-color 0.15s;
+}
+.search-box:focus { border-color: var(--accent); }
+.search-box::placeholder { color: var(--text3); }
+
+/* Results table */
+.table-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+
+.table-header {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.table-title { font-family: var(--display); font-size: 0.9rem; font-weight: 700; }
+.result-count { font-family: var(--mono); font-size: 0.68rem; color: var(--text3); }
+
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  background: var(--surface2);
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3);
+  padding: 0.7rem 1rem; text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+
+td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
+
+/* Score ring */
+.score-ring {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 500;
+  border: 2px solid; flex-shrink: 0;
+}
+.sr-hot  { color: var(--red);   border-color: var(--red);   background: var(--red-dim); }
+.sr-warm { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
+.sr-cool { color: var(--accent);border-color: var(--accent);background: var(--accent-dim); }
+.sr-cold { color: var(--text3); border-color: var(--border2);background: transparent; }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.2rem 0.55rem; border-radius: 5px;
+  font-family: var(--mono); font-size: 0.65rem; font-weight: 500;
+  white-space: nowrap; border: 1px solid;
+}
+.b-none    { color: var(--green); border-color: rgba(34,197,94,0.3); background: var(--green-dim); }
+.b-basic   { color: var(--amber); border-color: rgba(245,158,11,0.3); background: var(--amber-dim); }
+.b-mid     { color: var(--accent); border-color: rgba(59,130,246,0.3); background: var(--accent-dim); }
+.b-ent     { color: var(--red); border-color: rgba(239,68,68,0.3); background: var(--red-dim); }
+.b-blocked { color: var(--text3); border-color: var(--border2); background: transparent; }
+.b-scan    { color: var(--cyan); border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.08); animation: blink 1.4s infinite; }
+@keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+
+/* Platform tag */
+.ptag {
+  display: inline-block; font-family: var(--mono); font-size: 0.62rem;
+  padding: 0.12rem 0.4rem; border-radius: 4px; margin: 0.1rem;
+  background: var(--surface3); border: 1px solid var(--border2); color: var(--text2);
+}
+
+/* HubSpot button */
+.hs-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--sans); font-size: 0.7rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 6px; border: none;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.hs-btn-ready {
+  background: rgba(255,122,0,0.12); color: #ff7a00;
+  border: 1px solid rgba(255,122,0,0.3);
+}
+.hs-btn-ready:hover { background: rgba(255,122,0,0.2); }
+.hs-btn-sent {
+  background: var(--green-dim); color: var(--green);
+  border: 1px solid rgba(34,197,94,0.3); cursor: default;
+}
+
+/* Stage select */
+.stage-sel {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text2); font-family: var(--sans); font-size: 0.73rem;
+  padding: 0.28rem 0.5rem; border-radius: 6px; outline: none; cursor: pointer;
+}
+.stage-sel:hover { border-color: var(--accent); }
+
+/* Company name */
+.co-name { font-weight: 600; color: var(--text); margin-bottom: 0.1rem; }
+.co-name a { color: inherit; text-decoration: none; }
+.co-name a:hover { color: var(--accent); }
+.co-url { font-family: var(--mono); font-size: 0.65rem; color: var(--text3); }
+.co-url a { color: inherit; text-decoration: none; }
+.co-url a:hover { color: var(--cyan); }
+
+/* Contact info */
+.contact-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+.contact-line { font-family: var(--mono); font-size: 0.65rem; color: var(--text3); }
+.contact-line a { color: var(--accent); text-decoration: none; }
+.contact-line a:hover { text-decoration: underline; }
+
+/* Empty / loading states */
+.empty-state {
+  text-align: center; padding: 4rem 2rem; color: var(--text3);
+}
+.empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.empty-text { font-size: 0.88rem; line-height: 1.6; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border2); border-radius: 12px;
+  padding: 2rem; text-align: center; cursor: pointer;
+  transition: all 0.15s; margin-bottom: 1rem;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent); background: var(--accent-dim);
+}
+.upload-text { font-size: 0.85rem; color: var(--text2); margin-top: 0.5rem; }
+.upload-sub { font-size: 0.75rem; color: var(--text3); margin-top: 0.25rem; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 0.75rem 1.1rem;
+  font-size: 0.82rem; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.25s; pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: rgba(34,197,94,0.4); }
+.toast.error   { border-color: rgba(239,68,68,0.4); }
+
+/* Section separator */
+.section-label {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.15em;
+  padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+/* ── SEARCH TABS ── */
+.search-tabs-bar {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.6rem 1.5rem 0; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: relative; z-index: 2;
+}
+
+.search-tab {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--sans); font-size: 0.75rem; font-weight: 500;
+  padding: 0.4rem 0.85rem; border-radius: 8px 8px 0 0;
+  border: 1px solid transparent; border-bottom: none;
+  background: transparent; color: var(--text3); cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+  position: relative; bottom: -1px;
+}
+.search-tab:hover { color: var(--text); background: var(--surface2); }
+.search-tab.active {
+  color: var(--accent); background: var(--bg);
+  border-color: var(--border); border-bottom-color: var(--bg);
+}
+.search-tab-close {
+  font-size: 0.7rem; color: var(--text3); margin-left: 0.1rem;
+  border-radius: 3px; padding: 0 0.2rem; line-height: 1.4;
+  transition: all 0.1s;
+}
+.search-tab-close:hover { color: var(--red); background: var(--red-dim); }
+.search-tab-count {
+  font-family: var(--mono); font-size: 0.6rem;
+  background: var(--surface3); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 0.05rem 0.35rem; color: var(--text3);
+}
+.search-tab.active .search-tab-count { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+.tab-new-btn {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--text3);
+  background: transparent; border: 1px dashed var(--border2);
+  border-radius: 6px; padding: 0.28rem 0.6rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-new-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* History page */
+.history-page { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+.history-empty { text-align:center; padding:4rem 2rem; color:var(--text3); font-size:0.88rem; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div>
+    <div class="logo">Boris<em>.Prospect</em></div>
+    <div class="logo-sub">Sales Intelligence</div>
+  </div>
+  <div class="header-tabs">
+    <button class="tab active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button class="tab" onclick="showPage('upload',this)">📂 Upload List</button>
+    <button class="tab" onclick="showPage('history',this)">🕘 History</button>
+    <button class="tab" onclick="showPage('setup',this)">⚙️ Setup</button>
+  </div>
+  <div class="header-right">
+    <div class="date-badge" id="date-badge"></div>
+    <div class="date-badge" id="result-count-badge" style="display:none"></div>
+  </div>
+</header>
+
+<!-- SEARCH TABS BAR -->
+<div class="search-tabs-bar" id="search-tabs-bar" style="display:none">
+  <div id="search-tabs-list" style="display:flex;gap:0.35rem;flex-wrap:wrap"></div>
+  <button class="tab-new-btn" onclick="newSearchTab()" title="New search">+ New Search</button>
+</div>
+
+<!-- ════════════════════════ DASHBOARD PAGE ════════════════════════ -->
+<div class="page active" id="page-dashboard">
+<div class="dash-page">
+
+  <!-- Search Panel -->
+  <div class="search-panel">
+    <div class="field">
+      <div class="field-label">Sector / Business Type</div>
+      <input class="field-input" id="inp-sector" placeholder="e.g. estate agents, law firms, dentists…" list="sector-suggestions" autocomplete="off">
+      <datalist id="sector-suggestions">
+        <option value="estate agents">
+        <option value="law firms">
+        <option value="accountants">
+        <option value="dental practices">
+        <option value="restaurants">
+        <option value="hotels">
+        <option value="gyms and fitness studios">
+        <option value="recruitment agencies">
+        <option value="marketing agencies">
+        <option value="mortgage brokers">
+        <option value="car dealerships">
+        <option value="solicitors">
+        <option value="insurance brokers">
+        <option value="IT support companies">
+        <option value="care homes">
+        <option value="beauty salons">
+        <option value="financial advisers">
+        <option value="architects">
+        <option value="letting agents">
+        <option value="plumbers">
+      </datalist>
+    </div>
+    <div class="field">
+      <div class="field-label">Location</div>
+      <input class="field-input" id="inp-location" placeholder="e.g. Manchester, Leeds, UK…">
+    </div>
+    <div class="field">
+      <div class="field-label">Max Results</div>
+      <select class="field-select" id="inp-limit" style="min-width:100px">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="40">40</option>
+        <option value="60">60</option>
+      </select>
+    </div>
+    <div class="search-divider"></div>
+    <button class="btn btn-primary" id="btn-search" onclick="runSearch()">
+      🔍 Find Companies
+    </button>
+    <button class="btn btn-ghost btn-sm" id="btn-stop" onclick="stopSearch()" disabled>Stop</button>
+    <span style="font-family:var(--mono);font-size:0.68rem;color:var(--text3)" id="search-status"></span>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-meta">
+      <span class="progress-label" id="progress-label">Starting…</span>
+      <span class="progress-label" id="progress-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Companies Found</div><div class="kpi-val c-text" id="k-total">—</div></div>
+    <div class="kpi"><div class="kpi-label">🟢 No Chatbot</div><div class="kpi-val c-green" id="k-none">—</div><div class="kpi-sub">Greenfield opportunities</div></div>
+    <div class="kpi"><div class="kpi-label">🟡 Basic Chat</div><div class="kpi-val c-amber" id="k-basic">—</div><div class="kpi-sub">Upgrade sell</div></div>
+    <div class="kpi"><div class="kpi-label">🔵 Competitor</div><div class="kpi-val c-blue" id="k-comp">—</div><div class="kpi-sub">Switch opportunity</div></div>
+    <div class="kpi"><div class="kpi-label">🔴 Hot Leads</div><div class="kpi-val c-red" id="k-hot">—</div><div class="kpi-sub">Score 70+</div></div>
+    <div class="kpi"><div class="kpi-label">Pushed to HubSpot</div><div class="kpi-val c-muted" id="k-hs">—</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <button class="chip active" onclick="setFilter('all',this)">All</button>
+    <button class="chip" onclick="setFilter('none',this)">🟢 No Chatbot</button>
+    <button class="chip" onclick="setFilter('basic',this)">🟡 Basic Chat</button>
+    <button class="chip" onclick="setFilter('competitor',this)">🔵 Competitor</button>
+    <button class="chip" onclick="setFilter('hot',this)">🔴 Hot (70+)</button>
+    <button class="chip" onclick="setFilter('blocked',this)">⬜ Blocked</button>
+    <div class="filter-right">
+      <input class="search-box" id="search-box" placeholder="Search…" oninput="renderTable()">
+      <button class="btn btn-outline btn-sm" onclick="clearResults()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Results</span>
+      <span class="result-count" id="table-count"></span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:0.65rem;color:var(--text3)" id="last-search-label"></span>
+    </div>
+    <div id="table-area">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Enter a sector and location above, then click <strong>Find Companies</strong><br>Results will appear here ranked by Boris opportunity score</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ════════════════════════ UPLOAD PAGE ════════════════════════ -->
+<div class="page" id="page-upload">
+<div class="dash-page">
+  <div style="max-width:700px">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-family:var(--display);font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:0.3rem">Upload Your <em style="color:var(--accent);font-style:normal">Own List</em></div>
+      <div style="font-size:0.85rem;color:var(--text2)">Drop in a HubSpot CSV export or any spreadsheet with company names and website URLs. Boris.AI will score and enrich each one.</div>
+    </div>
+
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      <div style="font-size:2rem">📂</div>
+      <div class="upload-text">Click to upload or drag & drop your CSV here</div>
+      <div class="upload-sub">Needs columns: Company Name + Website URL (HubSpot exports work perfectly)</div>
+    </div>
+    <input type="file" id="file-input" accept=".csv" style="display:none" onchange="handleFile(event)">
+
+    <div id="upload-preview" style="display:none">
+      <div style="font-family:var(--mono);font-size:0.72rem;color:var(--text3);margin-bottom:0.75rem" id="upload-meta"></div>
+      <button class="btn btn-primary" onclick="processUpload()">▶ Scan & Score These Companies</button>
+      <button class="btn btn-ghost btn-sm" onclick="cancelUpload()" style="margin-left:0.5rem">Cancel</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════ SETUP PAGE ════════════════════════ -->
+<div class="page" id="page-setup">
+<div class="setup-page">
+  <div class="setup-hero">
+    <div class="setup-title">Get <em>Set Up</em></div>
+    <div class="setup-sub">Two API keys to connect — takes about 10 minutes. You only do this once. Keys are saved in your browser.</div>
+  </div>
+
+  <div class="setup-steps">
+
+    <!-- Step 1: Google Places -->
+    <div class="step-card" id="step1-card">
+      <span class="check-icon">✅</span>
+      <div class="step-num">Step 1 of 2</div>
+      <div class="step-title">Google Places API Key</div>
+      <div class="step-desc">This lets Boris.AI search for real businesses by sector and location across the UK.</div>
+      <div class="instructions">
+        <ol>
+          <li>Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">console.cloud.google.com</a> and sign in with your Google account</li>
+          <li>Click <strong>Create Project</strong> → name it "Boris AI" → click Create</li>
+          <li>In the left menu go to <strong>APIs & Services → Library</strong></li>
+          <li>Search for <strong>"Places API"</strong> → click it → click <strong>Enable</strong></li>
+          <li>Go to <strong>APIs & Services → Credentials</strong></li>
+          <li>Click <strong>+ Create Credentials → API Key</strong> → copy the key shown</li>
+          <li>Paste it below. Google gives you <strong>$200 free credit/month</strong> — enough for hundreds of searches</li>
+        </ol>
+      </div>
+      <div class="input-row">
+        <input class="api-input" id="inp-google-key" type="password" placeholder="AIza…" oninput="validateGoogleKey()">
+        <button class="btn btn-primary btn-sm" onclick="saveGoogleKey()">Save Key</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-top:0.5rem" id="google-key-status"></div>
+    </div>
+
+    <!-- Step 2: HubSpot -->
+    <div class="step-card" id="step2-card">
+      <span class="check-icon">✅</span>
+      <div class="step-num">Step 2 of 2</div>
+      <div class="step-title">HubSpot Private App Token</div>
+      <div class="step-desc">This lets you push companies directly into HubSpot as contacts with one click — only when you choose to.</div>
+      <div class="instructions">
+        <ol>
+          <li>In HubSpot, click your account name (top right) → <strong>Account Settings</strong></li>
+          <li>Go to <strong>Integrations → Private Apps</strong> in the left menu</li>
+          <li>Click <strong>Create a private app</strong></li>
+          <li>Name it "Boris AI" → go to the <strong>Scopes</strong> tab</li>
+          <li>Enable: <code>crm.objects.companies.write</code> and <code>crm.objects.contacts.write</code></li>
+          <li>Click <strong>Create app</strong> → copy the token shown (starts with <code>pat-</code>)</li>
+          <li>Paste it below</li>
+        </ol>
+      </div>
+      <div class="input-row">
+        <input class="api-input" id="inp-hs-key" type="password" placeholder="pat-na1-…" oninput="validateHsKey()">
+        <button class="btn btn-primary btn-sm" onclick="saveHsKey()">Save Token</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-top:0.5rem" id="hs-key-status"></div>
+    </div>
+
+    <!-- Status -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem">
+      <div style="font-family:var(--display);font-weight:700;margin-bottom:0.75rem">Connection Status</div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem" id="conn-status">
+        <div style="font-size:0.82rem;color:var(--text3)">Add your API keys above to get started.</div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:1rem" onclick="showPage('dashboard', document.querySelector('.tab'))">→ Go to Dashboard</button>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════ HISTORY PAGE ════════════════════════ -->
+<div class="page" id="page-history">
+<div class="history-page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+    <div>
+      <div style="font-family:var(--display);font-size:1.4rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:0.25rem">Search <em style="color:var(--accent);font-style:normal">History</em></div>
+      <div style="font-size:0.85rem;color:var(--text2)">All companies found across every search — accumulated and exportable</div>
+    </div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="clearHistory()">🗑 Clear History</button>
+      <button class="btn btn-primary" onclick="exportHistory()">↓ Export All to CSV</button>
+    </div>
+  </div>
+  <div class="kpi-row" style="margin-bottom:1.25rem">
+    <div class="kpi"><div class="kpi-label">Total Companies</div><div class="kpi-val c-text" id="hk-total">—</div></div>
+    <div class="kpi"><div class="kpi-label">🟢 No Chatbot</div><div class="kpi-val c-green" id="hk-none">—</div></div>
+    <div class="kpi"><div class="kpi-label">🟡 Basic Chat</div><div class="kpi-val c-amber" id="hk-basic">—</div></div>
+    <div class="kpi"><div class="kpi-label">🔵 Competitor</div><div class="kpi-val c-blue" id="hk-comp">—</div></div>
+    <div class="kpi"><div class="kpi-label">Searches Run</div><div class="kpi-val c-text" id="hk-searches">—</div></div>
+    <div class="kpi"><div class="kpi-label">Pushed to HubSpot</div><div class="kpi-val c-muted" id="hk-hs">—</div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">All Results</span>
+      <span class="result-count" id="history-count"></span>
+      <div style="margin-left:auto;display:flex;gap:0.5rem">
+        <input class="search-box" id="history-search" placeholder="Search all history…" oninput="renderHistory()">
+        <select class="field-select" id="history-filter" onchange="renderHistory()" style="min-width:140px;font-size:0.78rem;padding:0.3rem 0.6rem">
+          <option value="all">All statuses</option>
+          <option value="none">🟢 No Chatbot</option>
+          <option value="basic">🟡 Basic Chat</option>
+          <option value="competitor">🔵 Competitor</option>
+          <option value="blocked">⬜ Blocked</option>
+        </select>
+      </div>
+    </div>
+    <div id="history-table-area"><div class="history-empty">No search history yet — run a search on the Dashboard first</div></div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// PLATFORM DEFINITIONS
+// ════════════════════════════════════════════════════
+const PLATFORMS = [
+  // Enterprise
+  { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com"] },
+  { name:"Drift",           tier:"enterprise", score:85, patterns:["drift.com","js.drift.com","driftt.com"] },
+  { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zendesk.com","zopim.com","ze-snippet"] },
+  { name:"Salesforce Chat", tier:"enterprise", score:78, patterns:["force.com/embeddedservice"] },
+  { name:"LivePerson",      tier:"enterprise", score:76, patterns:["liveperson.net","lpcdn.lpsnmedia"] },
+  // Mid
+  { name:"HubSpot Chat",    tier:"mid", score:70, patterns:["js.hs-scripts.com","hubspot.com/conversations"] },
+  { name:"Freshchat",       tier:"mid", score:66, patterns:["freshchat.com","wchat.freshchat.io"] },
+  { name:"Crisp",           tier:"mid", score:62, patterns:["crisp.chat","client.crisp.chat"] },
+  { name:"Tidio",           tier:"mid", score:60, patterns:["code.tidio.co","tidiochat.com"] },
+  { name:"Smartsupp",       tier:"mid", score:58, patterns:["smartsupp.com/loader"] },
+  { name:"Help Scout",      tier:"mid", score:56, patterns:["beacon-v2.helpscout.net"] },
+  { name:"Kommunicate",     tier:"mid", score:54, patterns:["kommunicate.io"] },
+  { name:"Kustomer",        tier:"mid", score:54, patterns:["cdn.kustomerapp.com"] },
+  { name:"Gorgias",         tier:"mid", score:52, patterns:["config.gorgias.chat"] },
+  { name:"Userlike",        tier:"mid", score:50, patterns:["userlike.com/widget"] },
+  // Basic
+  { name:"Tawk.to",         tier:"basic", score:46, patterns:["tawk.to","embed.tawk.to","tawk_api"] },
+  { name:"LiveChat",        tier:"basic", score:44, patterns:["livechatinc.com","cdn.livechatinc.com"] },
+  { name:"Olark",           tier:"basic", score:40, patterns:["olark.com","static.olark.com"] },
+  { name:"PureChat",        tier:"basic", score:38, patterns:["purechat.com"] },
+  { name:"Chatra",          tier:"basic", score:36, patterns:["call.chatra.io"] },
+  { name:"LiveAgent",       tier:"basic", score:34, patterns:["ladesk.com"] },
+  { name:"Landbot",         tier:"basic", score:34, patterns:["landbot.io","cdn.landbot.io"] },
+  { name:"Chatbase",        tier:"basic", score:30, patterns:["chatbase.co"] },
+  { name:"Botpress",        tier:"basic", score:30, patterns:["cdn.botpress.cloud"] },
+  { name:"Voiceflow",       tier:"basic", score:28, patterns:["voiceflow.com/widget"] },
+];
+
+const TIER_LABEL = { enterprise:'🔴 Enterprise', mid:'🔵 Competitor', basic:'🟡 Basic' };
+const STAGES = ['Not Contacted','Researching','Email Sent','Call Made','Meeting Booked','Proposal Sent','Won','Lost'];
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let sessions = [];        // Array of { id, label, results, timestamp }
+let activeSessionId = null;
+let history_ = [];        // Master list of all results ever found
+let results = [];         // Current session results (alias)
+let stopFlag = false;
+let activeFilter = 'all';
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('date-badge').textContent = new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  loadKeys();
+  updateConnStatus();
+});
+
+// ════════════════════════════════════════════════════
+// PAGE NAV
+// ════════════════════════════════════════════════════
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  // Show tabs bar only on dashboard
+  document.getElementById('search-tabs-bar').style.display = (id === 'dashboard') ? 'flex' : 'none';
+  if (id === 'history') renderHistory();
+}
+
+// ════════════════════════════════════════════════════
+// SESSION / TAB MANAGEMENT
+// ════════════════════════════════════════════════════
+function createSession(label) {
+  const id = Date.now();
+  const session = { id, label, results: [], timestamp: new Date().toISOString() };
+  sessions.push(session);
+  activeSessionId = id;
+  results = session.results;
+  renderTabs();
+  return session;
+}
+
+function switchSession(id) {
+  activeSessionId = id;
+  const session = sessions.find(s => s.id === id);
+  if (session) { results = session.results; }
+  activeFilter = 'all';
+  document.querySelectorAll('.chip').forEach((c,i) => { if(i===0) c.classList.add('active'); else c.classList.remove('active'); });
+  renderTabs();
+  updateKPIs();
+  renderTable();
+}
+
+function closeSession(id, e) {
+  e.stopPropagation();
+  const idx = sessions.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  sessions.splice(idx, 1);
+  if (sessions.length === 0) {
+    results = []; activeSessionId = null;
+    renderTabs(); updateKPIs(); renderTable();
+  } else {
+    const newActive = sessions[Math.min(idx, sessions.length-1)];
+    switchSession(newActive.id);
+  }
+}
+
+function newSearchTab() {
+  // Just clear the search fields so user can do a new search
+  document.getElementById('inp-sector').value = '';
+  document.getElementById('inp-location').value = '';
+  document.getElementById('inp-sector').focus();
+}
+
+function renderTabs() {
+  const bar = document.getElementById('search-tabs-list');
+  if (!sessions.length) { document.getElementById('search-tabs-bar').style.display = 'none'; return; }
+  document.getElementById('search-tabs-bar').style.display = 'flex';
+  bar.innerHTML = sessions.map(s => `
+    <button class="search-tab ${s.id === activeSessionId ? 'active' : ''}" onclick="switchSession(${s.id})">
+      <span>${s.label}</span>
+      <span class="search-tab-count">${s.results.length}</span>
+      <span class="search-tab-close" onclick="closeSession(${s.id}, event)">✕</span>
+    </button>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+// API KEY MANAGEMENT
+// ════════════════════════════════════════════════════
+function getGoogleKey() { return localStorage.getItem('boris_google_key') || ''; }
+function getHsKey()     { return localStorage.getItem('boris_hs_key') || ''; }
+
+function loadKeys() {
+  const gk = getGoogleKey(), hk = getHsKey();
+  if (gk) { document.getElementById('inp-google-key').value = gk; markStepDone('step1-card', 'google-key-status', '✓ Google Places key loaded'); }
+  if (hk) { document.getElementById('inp-hs-key').value = hk; markStepDone('step2-card', 'hs-key-status', '✓ HubSpot token loaded'); }
+}
+
+function saveGoogleKey() {
+  const v = document.getElementById('inp-google-key').value.trim();
+  if (!v) return toast('Enter your Google API key first', 'error');
+  localStorage.setItem('boris_google_key', v);
+  markStepDone('step1-card', 'google-key-status', '✓ Google Places key saved');
+  updateConnStatus(); toast('Google Places key saved ✓', 'success');
+}
+
+function saveHsKey() {
+  const v = document.getElementById('inp-hs-key').value.trim();
+  if (!v) return toast('Enter your HubSpot token first', 'error');
+  localStorage.setItem('boris_hs_key', v);
+  markStepDone('step2-card', 'hs-key-status', '✓ HubSpot token saved');
+  updateConnStatus(); toast('HubSpot token saved ✓', 'success');
+}
+
+function markStepDone(cardId, statusId, msg) {
+  document.getElementById(cardId).classList.add('done');
+  document.getElementById(statusId).textContent = msg;
+  document.getElementById(statusId).style.color = 'var(--green)';
+}
+
+function validateGoogleKey() {
+  const v = document.getElementById('inp-google-key').value.trim();
+  document.getElementById('inp-google-key').classList.toggle('valid', v.length > 20);
+}
+function validateHsKey() {
+  const v = document.getElementById('inp-hs-key').value.trim();
+  document.getElementById('inp-hs-key').classList.toggle('valid', v.startsWith('pat-'));
+}
+
+function updateConnStatus() {
+  const gk = getGoogleKey(), hk = getHsKey();
+  const el = document.getElementById('conn-status');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
+      <span style="color:${gk?'var(--green)':'var(--text3)'}">${gk?'✅':'⬜'}</span>
+      <span style="color:${gk?'var(--text)':'var(--text3)'}">Google Places API ${gk?'— connected':'— not set up'}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
+      <span style="color:${hk?'var(--green)':'var(--text3)'}">${hk?'✅':'⬜'}</span>
+      <span style="color:${hk?'var(--text)':'var(--text3)'}">HubSpot ${hk?'— connected':'— not set up (HubSpot push won\'t work)'}</span>
+    </div>
+    ${!gk ? '<div style="font-size:0.75rem;color:var(--amber);margin-top:0.5rem">⚠️ Add your Google Places key to enable company search</div>' : ''}
+  `;
+}
+
+// ════════════════════════════════════════════════════
+// GOOGLE PLACES SEARCH — Maps JS API (browser-native, no CORS)
+// ════════════════════════════════════════════════════
+
+let mapsLoaded = false;
+let mapsLoading = false;
+let mapsCallbacks = [];
+
+function loadGoogleMapsScript(apiKey) {
+  return new Promise((resolve, reject) => {
+    if (mapsLoaded && window.google?.maps?.places) { resolve(); return; }
+    mapsCallbacks.push({ resolve, reject });
+    if (mapsLoading) return;
+    mapsLoading = true;
+    window._googleMapsReady = () => {
+      mapsLoaded = true; mapsLoading = false;
+      mapsCallbacks.forEach(cb => cb.resolve());
+      mapsCallbacks = [];
+    };
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=_googleMapsReady`;
+    s.async = true; s.defer = true;
+    s.onerror = () => { mapsLoading = false; mapsCallbacks.forEach(cb => cb.reject(new Error('Failed to load Maps'))); mapsCallbacks = []; };
+    document.head.appendChild(s);
+  });
+}
+
+function gmTextSearch(query) {
+  return new Promise((resolve) => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const map = new google.maps.Map(div, { center:{lat:54.97,lng:-1.61}, zoom:10 });
+    const svc = new google.maps.places.PlacesService(map);
+    svc.textSearch({ query, region:'gb' }, (res, status) => {
+      document.body.removeChild(div);
+      resolve(status === 'OK' ? (res||[]) : []);
+    });
+  });
+}
+
+function gmGetDetails(placeId) {
+  return new Promise((resolve) => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const map = new google.maps.Map(div, { center:{lat:54.97,lng:-1.61}, zoom:10 });
+    const svc = new google.maps.places.PlacesService(map);
+    svc.getDetails(
+      { placeId, fields:['name','website','formatted_phone_number','formatted_address'] },
+      (result, status) => { document.body.removeChild(div); resolve(status === 'OK' ? result : null); }
+    );
+  });
+}
+
+async function runSearch() {
+  const sector   = document.getElementById('inp-sector').value.trim();
+  const location = document.getElementById('inp-location').value.trim();
+  const limit    = parseInt(document.getElementById('inp-limit').value);
+  const apiKey   = getGoogleKey();
+
+  if (!sector || !location) return toast('Enter a sector and location first', 'error');
+  if (!apiKey) return toast('Add your Google Places API key in Setup first', 'error');
+
+  stopFlag = false;
+  // Create a new session/tab for this search
+  const sessionLabel = `${sector} · ${location}`;
+  const session = createSession(sessionLabel);
+  results = session.results;
+
+  document.getElementById('btn-search').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('last-search-label').textContent = sessionLabel;
+  setProgress(0, 'Loading Google Maps…');
+  document.getElementById('search-status').textContent = 'Connecting…';
+
+  // Load Maps JS SDK (runs natively in browser — no CORS)
+  try {
+    await loadGoogleMapsScript(apiKey);
+  } catch(e) {
+    toast('Could not load Google Maps — check your API key in Setup', 'error');
+    resetSearch(); return;
+  }
+
+  setProgress(8, `Searching for "${sector}" in ${location}…`);
+  document.getElementById('search-status').textContent = 'Searching…';
+
+  // Step 1: Text search
+  let places = [];
+  try {
+    places = await gmTextSearch(`${sector} in ${location} UK`);
+    places = places.slice(0, limit);
+  } catch(e) {
+    toast('Search failed — make sure Places API is enabled in Google Cloud', 'error');
+    resetSearch(); return;
+  }
+
+  if (!places.length) {
+    toast('No companies found — try different search terms', 'error');
+    resetSearch(); return;
+  }
+
+  setProgress(15, `Found ${places.length} companies — getting contact details…`);
+  document.getElementById('search-status').textContent = `Found ${places.length} companies`;
+
+  // Step 2: Get website + phone for each
+  for (let i = 0; i < places.length; i++) {
+    if (stopFlag) break;
+    const place = places[i];
+    setProgress(15 + (i / places.length) * 40, `Getting details: ${place.name}…`);
+
+    let website = '', phone = '';
+    try {
+      const detail = await gmGetDetails(place.place_id);
+      if (detail) { website = detail.website||''; phone = detail.formatted_phone_number||''; }
+    } catch(e) {}
+
+    const newEntry = {
+      name: place.name,
+      address: place.formatted_address || place.vicinity || '',
+      website: website.replace(/^https?:\/\//,'').replace(/\/$/,''),
+      phone,
+      chatStatus: 'pending', tier: null, platforms: [],
+      score: 0, stage: 'Not Contacted', pushedToHS: false, notes: '',
+      searchLabel: sessionLabel, searchDate: new Date().toLocaleDateString('en-GB'),
+    };
+    results.push(newEntry);
+    history_.push(newEntry); // accumulate into master history
+
+    updateKPIs(); renderTable();
+    await sleep(100);
+  }
+
+  // Step 3: Scan each website for chat tools
+  setProgress(56, 'Scanning websites for chat tools…');
+
+  for (let i = 0; i < results.length; i++) {
+    if (stopFlag) break;
+    const r = results[i];
+    if (!r.website) { r.chatStatus = 'blocked'; r.score = 5; updateKPIs(); renderTable(); continue; }
+
+    setProgress(56 + (i / results.length) * 42, `Checking ${r.name}…`);
+    document.getElementById('search-status').textContent = `Scanning ${i+1}/${results.length}: ${r.name}`;
+
+    const detection = await detectChat(r.website);
+    r.chatStatus = detection.status;
+    r.platforms  = detection.platforms;
+    r.tier       = detection.tier;
+    r.score      = calcScore(detection, r.website, r.name);
+
+    updateKPIs(); renderTable();
+    await sleep(300);
+  }
+
+  results.sort((a,b) => b.score - a.score);
+  setProgress(100, `✓ Done — ${results.length} companies scanned`);
+  document.getElementById('search-status').textContent = `✓ ${results.length} companies found & scored`;
+  document.getElementById('btn-search').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  updateKPIs(); renderTable(); renderTabs();
+  setTimeout(() => { document.getElementById('progress-wrap').style.display = 'none'; }, 2500);
+}
+
+function stopSearch() {
+  stopFlag = true;
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('search-status').textContent = 'Stopping…';
+}
+
+function resetSearch() {
+  document.getElementById('btn-search').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('search-status').textContent = '';
+}
+
+// ════════════════════════════════════════════════════
+// CHAT DETECTION
+// ════════════════════════════════════════════════════
+async function detectChat(domain) {
+  const url = 'https://' + domain;
+  let html = '';
+
+  // Try direct fetch first
+  try {
+    html = await fetch(url, { signal: AbortSignal.timeout(9000), mode:'cors' }).then(r=>r.text());
+  } catch(e) {}
+
+  // Proxy fallback 1
+  if (!html) {
+    try {
+      const j = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.json());
+      html = j.contents || '';
+    } catch(e) {}
+  }
+
+  // Proxy fallback 2
+  if (!html) {
+    try {
+      html = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.text());
+    } catch(e) {}
+  }
+
+  if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null };
+
+  const lower = html.toLowerCase();
+  const found = [];
+  for (const p of PLATFORMS) {
+    for (const pat of p.patterns) {
+      if (lower.includes(pat)) { found.push(p); break; }
+    }
+  }
+
+  if (!found.length) return { status:'none', platforms:[], tier:'none' };
+
+  // Determine highest tier
+  const tiers = found.map(p=>p.tier);
+  const tier = tiers.includes('enterprise') ? 'enterprise' : tiers.includes('mid') ? 'mid' : 'basic';
+
+  return { status:'competitor', platforms: found.map(p=>p.name), tier };
+}
+
+// ════════════════════════════════════════════════════
+// SCORING
+// ════════════════════════════════════════════════════
+const SIZE_SIGNALS = ['group','international','global','solutions','systems','software','technologies','enterprises','associates','partners','services','consultancy','consulting','management'];
+
+function calcScore(detection, domain, name) {
+  let base = 0;
+  if (detection.status === 'blocked') return 0;
+  if (detection.status === 'none') {
+    base = 72; // No chatbot = big opportunity, high base score
+  } else if (detection.status === 'competitor') {
+    // Find highest-scoring platform
+    const best = detection.platforms.reduce((max, pName) => {
+      const def = PLATFORMS.find(p=>p.name===pName);
+      return def && def.score > max ? def.score : max;
+    }, 0);
+    base = best;
+    // Multiple platforms = disorganised stack bonus
+    if (detection.platforms.length > 1) base = Math.min(100, base + 5);
+  }
+
+  // Size bonus — signals in domain/name suggest larger org
+  const combined = (domain + ' ' + name).toLowerCase();
+  const sizeHits = SIZE_SIGNALS.filter(s => combined.includes(s)).length;
+  const sizeBonus = Math.min(10, sizeHits * 4);
+
+  return Math.min(100, Math.round(base + sizeBonus));
+}
+
+function scoreTier(score) {
+  if (score >= 70) return 'hot';
+  if (score >= 45) return 'warm';
+  if (score >= 10) return 'cool';
+  return 'cold';
+}
+
+// ════════════════════════════════════════════════════
+// KPIs
+// ════════════════════════════════════════════════════
+function updateKPIs() {
+  const done = results.filter(r=>r.chatStatus!=='pending');
+  const none  = done.filter(r=>r.chatStatus==='none').length;
+  const basic = done.filter(r=>r.chatStatus==='competitor' && r.tier==='basic').length;
+  const comp  = done.filter(r=>r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise')).length;
+  const hot   = done.filter(r=>r.score>=70).length;
+  const hs    = results.filter(r=>r.pushedToHS).length;
+
+  document.getElementById('k-total').textContent = results.length || '—';
+  document.getElementById('k-none').textContent  = none  || (results.length ? '0' : '—');
+  document.getElementById('k-basic').textContent = basic || (results.length ? '0' : '—');
+  document.getElementById('k-comp').textContent  = comp  || (results.length ? '0' : '—');
+  document.getElementById('k-hot').textContent   = hot   || (results.length ? '0' : '—');
+  document.getElementById('k-hs').textContent    = hs    || '—';
+}
+
+// ════════════════════════════════════════════════════
+// TABLE RENDER
+// ════════════════════════════════════════════════════
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function clearResults() {
+  results = [];
+  activeFilter = 'all';
+  document.querySelectorAll('.chip').forEach((c,i)=>{ if(i===0) c.classList.add('active'); else c.classList.remove('active'); });
+  document.getElementById('last-search-label').textContent = '';
+  document.getElementById('search-status').textContent = '';
+  updateKPIs();
+  renderTable();
+}
+
+function renderTable() {
+  const search = (document.getElementById('search-box')?.value||'').toLowerCase();
+
+  let rows = results.filter(r => {
+    // Filter
+    if (activeFilter === 'none'       && r.chatStatus !== 'none') return false;
+    if (activeFilter === 'basic'      && !(r.chatStatus==='competitor' && r.tier==='basic')) return false;
+    if (activeFilter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'))) return false;
+    if (activeFilter === 'hot'        && r.score < 70) return false;
+    if (activeFilter === 'blocked'    && r.chatStatus !== 'blocked') return false;
+    // Search
+    if (search && !r.name.toLowerCase().includes(search) && !r.website.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('table-count').textContent = `${rows.length} of ${results.length}`;
+
+  if (!results.length) {
+    document.getElementById('table-area').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Enter a sector and location above, then click <strong>Find Companies</strong><br>Results will appear here ranked by Boris opportunity score</div>
+      </div>`;
+    return;
+  }
+
+  if (!rows.length) {
+    document.getElementById('table-area').innerHTML = `<div class="empty-state"><div class="empty-icon">🤷</div><div class="empty-text">No companies match this filter</div></div>`;
+    return;
+  }
+
+  const trs = rows.map((r, idx) => {
+    const globalIdx = results.indexOf(r);
+    const score = r.score;
+    const st = scoreTier(score);
+
+    // Score ring
+    const ring = r.chatStatus === 'pending'
+      ? `<span class="badge b-scan">● scanning</span>`
+      : score
+        ? `<span class="score-ring sr-${st}">${score}</span>`
+        : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
+
+    // Chat status badge
+    let chatBadge = '';
+    if (r.chatStatus === 'pending')     chatBadge = `<span class="badge b-scan">● Scanning…</span>`;
+    else if (r.chatStatus === 'none')   chatBadge = `<span class="badge b-none">🟢 No Chatbot</span>`;
+    else if (r.chatStatus === 'blocked')chatBadge = `<span class="badge b-blocked">⬜ Blocked</span>`;
+    else if (r.tier === 'basic')        chatBadge = `<span class="badge b-basic">🟡 Basic Chat</span>`;
+    else if (r.tier === 'mid')          chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
+    else if (r.tier === 'enterprise')   chatBadge = `<span class="badge b-ent">🔴 Enterprise</span>`;
+
+    // Platforms
+    const ptags = r.platforms.map(p=>`<span class="ptag">${p}</span>`).join('');
+
+    // Contact
+    const phone = r.phone ? `<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>` : '';
+    const web   = r.website ? `<div class="contact-line">🌐 <a href="https://${r.website}" target="_blank">${r.website}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
+    const li    = r.name ? `<div class="contact-line">🔗 <a href="https://linkedin.com/company/${encodeURIComponent(r.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))}" target="_blank">LinkedIn</a></div>` : '';
+
+    // Stage select
+    const stageOpts = STAGES.map(s=>`<option value="${s}" ${r.stage===s?'selected':''}>${s}</option>`).join('');
+
+    // HubSpot button
+    const hsBtn = r.pushedToHS
+      ? `<span class="hs-btn hs-btn-sent">✓ In HubSpot</span>`
+      : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpot(${globalIdx})">→ HubSpot</button>`;
+
+    // What to say
+    let pitch = '';
+    if (r.chatStatus === 'none') pitch = `<div style="font-size:0.65rem;color:var(--green);margin-top:0.2rem">No chatbot — greenfield opportunity</div>`;
+    else if (r.tier === 'basic') pitch = `<div style="font-size:0.65rem;color:var(--amber);margin-top:0.2rem">Basic tool — easy upgrade sell</div>`;
+    else if (r.tier === 'mid' || r.tier === 'enterprise') pitch = `<div style="font-size:0.65rem;color:var(--accent);margin-top:0.2rem">Competitor — switch pitch</div>`;
+
+    return `<tr>
+      <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
+      <td style="width:38px;text-align:center">${ring}</td>
+      <td>
+        <div class="co-name"><a href="https://${r.website||'#'}" target="_blank">${r.name}</a></div>
+        <div style="font-size:0.68rem;color:var(--text3)">${r.address||''}</div>
+        ${pitch}
+      </td>
+      <td>
+        <div class="contact-cell">${web}${phone}${li}</div>
+      </td>
+      <td>${chatBadge}<div style="margin-top:0.3rem">${ptags}</div></td>
+      <td>
+        <select class="stage-sel" onchange="setStage(${globalIdx},this.value)">
+          ${stageOpts}
+        </select>
+      </td>
+      <td>${hsBtn}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-area').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px">#</th>
+          <th style="width:38px">Score</th>
+          <th>Company</th>
+          <th>Contact</th>
+          <th>Chat Status</th>
+          <th style="width:160px">Stage</th>
+          <th style="width:110px">HubSpot</th>
+        </tr>
+      </thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+}
+
+function setStage(i, val) {
+  results[i].stage = val;
+}
+
+// ════════════════════════════════════════════════════
+// HUBSPOT PUSH
+// ════════════════════════════════════════════════════
+async function pushToHubSpot(i) {
+  const r = results[i];
+  const hsKey = getHsKey();
+  if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
+
+  const props = {
+    name: r.name,
+    website: r.website ? 'https://'+r.website : '',
+    phone: r.phone || '',
+    description: buildHsDescription(r),
+  };
+
+  try {
+    const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${hsKey}`,
+      },
+      body: JSON.stringify({ properties: props }),
+    });
+
+    if (res.ok) {
+      results[i].pushedToHS = true;
+      updateKPIs();
+      renderTable();
+      toast(`${r.name} pushed to HubSpot ✓`, 'success');
+    } else {
+      const err = await res.json();
+      toast(`HubSpot error: ${err.message || res.status}`, 'error');
+    }
+  } catch(e) {
+    toast('HubSpot push failed — check your token', 'error');
+  }
+}
+
+function buildHsDescription(r) {
+  const chatInfo = r.chatStatus === 'none'
+    ? 'No chatbot detected — greenfield opportunity'
+    : r.chatStatus === 'blocked'
+    ? 'Website could not be scanned'
+    : `Chat tool: ${r.platforms.join(', ')} (${r.tier} tier)`;
+  return `[Boris.AI Lead] Opportunity Score: ${r.score}/100 | ${chatInfo} | Stage: ${r.stage} | Found: ${new Date().toLocaleDateString('en-GB')}`;
+}
+
+// ════════════════════════════════════════════════════
+// CSV UPLOAD
+// ════════════════════════════════════════════════════
+function dragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function dragLeave(e) { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function dropFile(e)  { e.preventDefault(); dragLeave(e); if (e.dataTransfer.files[0]) parseCSV(e.dataTransfer.files[0]); }
+function handleFile(e){ if (e.target.files[0]) parseCSV(e.target.files[0]); }
+function cancelUpload(){ uploadedCompanies=[]; document.getElementById('upload-preview').style.display='none'; document.getElementById('upload-meta').textContent=''; }
+
+function parseCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l=>l.trim());
+    const headers = lines[0].split(',').map(h=>h.replace(/"/g,'').trim().toLowerCase());
+    const nameIdx = headers.findIndex(h=>h.includes('company')||h.includes('name'));
+    const urlIdx  = headers.findIndex(h=>h.includes('website')||h.includes('url')||h.includes('domain'));
+
+    if (nameIdx<0||urlIdx<0) { toast('CSV needs "Company Name" and "Website URL" columns', 'error'); return; }
+
+    uploadedCompanies = lines.slice(1).map(line => {
+      const cols = line.split(',').map(c=>c.replace(/"/g,'').trim());
+      const url  = (cols[urlIdx]||'').replace(/^https?:\/\//,'').replace(/\/$/,'');
+      return { name: cols[nameIdx]||'Unknown', website: url };
+    }).filter(c=>c.website);
+
+    const seen2 = new Set(); uploadedCompanies = uploadedCompanies.filter(c=>{ if(seen2.has(c.website)) return false; seen2.add(c.website); return true; });
+
+    document.getElementById('upload-meta').textContent = `${uploadedCompanies.length} companies found in ${file.name}`;
+    document.getElementById('upload-preview').style.display = 'block';
+  };
+  reader.readAsText(file);
+}
+
+async function processUpload() {
+  if (!uploadedCompanies.length) return;
+  results = uploadedCompanies.map(c=>({ ...c, phone:'', address:'', chatStatus:'pending', tier:null, platforms:[], score:0, stage:'Not Contacted', pushedToHS:false, notes:'' }));
+
+  showPage('dashboard', document.querySelector('.tab'));
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('last-search-label').textContent = 'Uploaded list';
+  updateKPIs(); renderTable();
+
+  for (let i=0; i<results.length; i++) {
+    if (stopFlag) break;
+    const r = results[i];
+    setProgress((i/results.length)*100, `Scanning ${r.name}…`);
+    if (!r.website) { r.chatStatus='blocked'; continue; }
+    const d = await detectChat(r.website);
+    r.chatStatus=d.status; r.platforms=d.platforms; r.tier=d.tier;
+    r.score=calcScore(d, r.website, r.name);
+    updateKPIs(); renderTable();
+    await sleep(300);
+  }
+
+  results.sort((a,b)=>b.score-a.score);
+  setProgress(100, `✓ Done — ${results.length} companies scanned`);
+  updateKPIs(); renderTable();
+  setTimeout(()=>{ document.getElementById('progress-wrap').style.display='none'; }, 2000);
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+function setProgress(pct, label) {
+  document.getElementById('progress-fill').style.width = pct+'%';
+  document.getElementById('progress-label').textContent = label;
+  document.getElementById('progress-pct').textContent = Math.round(pct)+'%';
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type==='success'?'✓ ':'⚠ ') + msg;
+  el.className = `toast ${type} show`;
+  setTimeout(()=>el.classList.remove('show'), 3500);
+}
+// ════════════════════════════════════════════════════
+// HISTORY PAGE
+// ════════════════════════════════════════════════════
+function renderHistory() {
+  const search = (document.getElementById('history-search')?.value||'').toLowerCase();
+  const filter = document.getElementById('history-filter')?.value || 'all';
+
+  let rows = history_.filter(r => {
+    if (filter !== 'all') {
+      if (filter === 'none' && r.chatStatus !== 'none') return false;
+      if (filter === 'basic' && !(r.chatStatus==='competitor' && r.tier==='basic')) return false;
+      if (filter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'))) return false;
+      if (filter === 'blocked' && r.chatStatus !== 'blocked') return false;
+    }
+    if (search && !r.name.toLowerCase().includes(search) && !(r.website||'').toLowerCase().includes(search) && !(r.searchLabel||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  // Update history KPIs
+  document.getElementById('hk-total').textContent    = history_.length || '—';
+  document.getElementById('hk-none').textContent     = history_.filter(r=>r.chatStatus==='none').length || '—';
+  document.getElementById('hk-basic').textContent    = history_.filter(r=>r.chatStatus==='competitor'&&r.tier==='basic').length || '—';
+  document.getElementById('hk-comp').textContent     = history_.filter(r=>r.chatStatus==='competitor'&&(r.tier==='mid'||r.tier==='enterprise')).length || '—';
+  document.getElementById('hk-searches').textContent = sessions.length || '—';
+  document.getElementById('hk-hs').textContent       = history_.filter(r=>r.pushedToHS).length || '—';
+  document.getElementById('history-count').textContent = `${rows.length} of ${history_.length}`;
+
+  if (!history_.length) {
+    document.getElementById('history-table-area').innerHTML = '<div class="history-empty">No search history yet — run a search on the Dashboard first</div>';
+    return;
+  }
+
+  if (!rows.length) {
+    document.getElementById('history-table-area').innerHTML = '<div class="history-empty">No results match this filter</div>';
+    return;
+  }
+
+  const trs = rows.map((r, idx) => {
+    const globalIdx = history_.indexOf(r);
+    const score = r.score; const st = scoreTier(score);
+    const ring = score ? `<span class="score-ring sr-${st}">${score}</span>` : '—';
+    let chatBadge = '';
+    if (r.chatStatus==='none')     chatBadge = `<span class="badge b-none">🟢 No Chatbot</span>`;
+    else if (r.chatStatus==='blocked') chatBadge = `<span class="badge b-blocked">⬜ Blocked</span>`;
+    else if (r.tier==='basic')     chatBadge = `<span class="badge b-basic">🟡 Basic Chat</span>`;
+    else if (r.tier==='mid')       chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
+    else if (r.tier==='enterprise')chatBadge = `<span class="badge b-ent">🔴 Enterprise</span>`;
+    else                           chatBadge = `<span class="badge b-scan">● Scanning</span>`;
+    const hsBtn = r.pushedToHS
+      ? `<span class="hs-btn hs-btn-sent">✓ In HubSpot</span>`
+      : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
+    const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
+    return `<tr>
+      <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
+      <td style="width:38px;text-align:center">${ring}</td>
+      <td>
+        <div class="co-name"><a href="https://${r.website||'#'}" target="_blank">${r.name}</a></div>
+        <div style="margin-top:0.2rem">${searchTag}</div>
+        <div style="font-size:0.65rem;color:var(--text3)">${r.searchDate||''}</div>
+      </td>
+      <td>
+        <div class="contact-cell">
+          ${r.website?`<div class="contact-line">🌐 <a href="https://${r.website}" target="_blank">${r.website}</a></div>`:''}
+          ${r.phone?`<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>`:''}
+        </div>
+      </td>
+      <td>${chatBadge}</td>
+      <td>${r.platforms&&r.platforms.length?r.platforms.map(p=>`<span class="ptag">${p}</span>`).join(''):'—'}</td>
+      <td>${hsBtn}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('history-table-area').innerHTML = `
+    <table>
+      <thead><tr>
+        <th style="width:36px">#</th><th style="width:38px">Score</th>
+        <th>Company</th><th>Contact</th><th>Chat Status</th>
+        <th>Platform</th><th style="width:110px">HubSpot</th>
+      </tr></thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+}
+
+async function pushToHubSpotHistory(i) {
+  const r = history_[i];
+  if (!r) return;
+  const hsKey = getHsKey();
+  if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
+  try {
+    const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${hsKey}`},
+      body: JSON.stringify({ properties: { name:r.name, website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r) } }),
+    });
+    if (res.ok) { history_[i].pushedToHS=true; renderHistory(); toast(`${r.name} pushed to HubSpot ✓`,'success'); }
+    else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
+  } catch(e) { toast('HubSpot push failed','error'); }
+}
+
+function clearHistory() {
+  if (!confirm('Clear all search history? This cannot be undone.')) return;
+  history_ = []; sessions = []; activeSessionId = null; results = [];
+  renderTabs(); updateKPIs(); renderTable(); renderHistory();
+  toast('History cleared', 'success');
+}
+
+function exportHistory() {
+  if (!history_.length) return toast('No history to export yet', 'error');
+  const headers = ['#','Company','Website','Phone','Address','Chat Status','Platforms','Score','Search','Date','Stage','In HubSpot'];
+  const rows = [headers, ...history_.map((r,i) => [
+    i+1, r.name, r.website||'', r.phone||'', r.address||'',
+    r.chatStatus==='none'?'No Chatbot':r.chatStatus==='blocked'?'Blocked':`${r.tier||''} competitor`,
+    (r.platforms||[]).join('; '), r.score||'',
+    r.searchLabel||'', r.searchDate||'', r.stage||'', r.pushedToHS?'Yes':'No'
+  ])];
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `boris-prospect-history-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`Exported ${history_.length} companies to CSV ✓`, 'success');
+}
+
+</script>
+</body>
+</html>
