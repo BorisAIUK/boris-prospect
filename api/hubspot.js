@@ -22,35 +22,62 @@ module.exports = async (req, res) => {
 
   const cleanProps = { ...properties, domain };
 
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+
   try {
-    const hsRes = await fetch(
-      'https://api.hubapi.com/crm/v3/objects/companies/batch/upsert',
+    // Step 1: try PATCH by domain — updates if a unique record exists
+    const patchRes = await fetch(
+      `https://api.hubapi.com/crm/v3/objects/companies/${encodeURIComponent(domain)}?idProperty=domain`,
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          inputs: [{
-            idProperty: 'domain',
-            id: domain,
-            properties: cleanProps,
-          }],
-        }),
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ properties: cleanProps }),
       }
     );
 
-    const data = await hsRes.json();
-
-    if (!hsRes.ok) {
-      return res.status(hsRes.status).json(data);
+    if (patchRes.ok) {
+      const data = await patchRes.json();
+      return res.status(200).json(data);
     }
 
-    // Distinguish create vs update: for a new record createdAt === updatedAt
-    const record = data.results && data.results[0];
-    const wasCreated = record && record.createdAt === record.updatedAt;
-    return res.status(wasCreated ? 201 : 200).json(data);
+    if (patchRes.status === 409) {
+      return res.status(409).json({
+        message: 'Multiple records found with this domain in HubSpot — please merge duplicates first',
+      });
+    }
+
+    // Check for the non-unique property error in the body (sometimes comes as 400)
+    if (patchRes.status === 400) {
+      const errData = await patchRes.json();
+      const msg = errData.message || '';
+      if (msg.includes('non-unique') || msg.includes('multiple')) {
+        return res.status(409).json({
+          message: 'Multiple records found with this domain in HubSpot — please merge duplicates first',
+        });
+      }
+      return res.status(400).json(errData);
+    }
+
+    if (patchRes.status !== 404) {
+      const errData = await patchRes.json();
+      return res.status(patchRes.status).json(errData);
+    }
+
+    // Step 2: 404 means no existing record — create a new one
+    const createRes = await fetch(
+      'https://api.hubapi.com/crm/v3/objects/companies',
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ properties: cleanProps }),
+      }
+    );
+
+    const createData = await createRes.json();
+    return res.status(createRes.ok ? 201 : createRes.status).json(createData);
 
   } catch (e) {
     return res.status(502).json({ message: 'Upstream HubSpot request failed', error: e.message });
