@@ -811,13 +811,19 @@ function saveToStorage() {
       if (d) stageNotes[d] = { stage: r.stage, notes: r.notes };
     });
     localStorage.setItem('boris_stage_notes', JSON.stringify(stageNotes));
-  } catch(e) {}
+    console.log('Saving to storage:', history_.length, 'history items,', sessions.length, 'sessions');
+  } catch(e) {
+    console.error('saveToStorage error:', e);
+  }
 }
 
 function loadFromStorage() {
   try {
     const rawSessions = localStorage.getItem('boris_sessions');
-    if (!rawSessions) return;
+    if (!rawSessions) {
+      console.log('Loaded from storage: no saved data found');
+      return;
+    }
     sessions = JSON.parse(rawSessions);
     // Rebuild history_ via flatMap so session results and history_ share
     // the same object references — updates to one are reflected in both
@@ -839,8 +845,9 @@ function loadFromStorage() {
       activeSessionId = last.id;
       results = last.results || [];
     }
+    console.log('Loaded from storage:', history_.length, 'history items,', sessions.length, 'sessions');
   } catch(e) {
-    sessions = []; history_ = []; results = [];
+    console.error('loadFromStorage error:', e);
   }
 }
 
@@ -854,6 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
   renderTabs();
   updateKPIs();
+  renderTable();
   renderHistory();
 });
 
@@ -1141,6 +1149,7 @@ async function runSearch() {
   }
 
   results.sort((a,b) => b.score - a.score);
+  saveToStorage(); // persist final scanned + scored results
   setProgress(100, `✓ Done — ${results.length} companies scanned`);
   document.getElementById('search-status').textContent = `✓ ${results.length} companies found & scored`;
   document.getElementById('btn-search').disabled = false;
