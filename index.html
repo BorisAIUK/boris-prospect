@@ -363,8 +363,9 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 .hs-btn-ready:hover { background: rgba(255,122,0,0.2); }
 .hs-btn-sent {
   background: var(--green-dim); color: var(--green);
-  border: 1px solid rgba(34,197,94,0.3); cursor: default;
+  border: 1px solid rgba(34,197,94,0.3);
 }
+.hs-btn-sent:hover { background: rgba(34,197,94,0.2); }
 
 /* Stage select */
 .stage-sel {
@@ -1369,7 +1370,7 @@ function renderTable() {
 
     // HubSpot button
     const hsBtn = r.pushedToHS
-      ? `<span class="hs-btn hs-btn-sent">✓ In HubSpot</span>`
+      ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpot(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpot(${globalIdx})">→ HubSpot</button>`;
 
     // What to say
@@ -1623,7 +1624,7 @@ function renderHistory() {
     else if (r.tier==='enterprise')chatBadge = `<span class="badge b-ent">🔴 Enterprise</span>`;
     else                           chatBadge = `<span class="badge b-scan">● Scanning</span>`;
     const hsBtn = r.pushedToHS
-      ? `<span class="hs-btn hs-btn-sent">✓ In HubSpot</span>`
+      ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpotHistory(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
