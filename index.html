@@ -798,12 +798,63 @@ let stopFlag = false;
 let activeFilter = 'all';
 
 // ════════════════════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════════════════════
+function saveToStorage() {
+  try {
+    localStorage.setItem('boris_sessions', JSON.stringify(sessions));
+    localStorage.setItem('boris_history', JSON.stringify(history_));
+    // Stage + notes persisted per domain as a fast-access map
+    const stageNotes = {};
+    history_.forEach(r => {
+      const d = extractDomain(r.website);
+      if (d) stageNotes[d] = { stage: r.stage, notes: r.notes };
+    });
+    localStorage.setItem('boris_stage_notes', JSON.stringify(stageNotes));
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const rawSessions = localStorage.getItem('boris_sessions');
+    if (!rawSessions) return;
+    sessions = JSON.parse(rawSessions);
+    // Rebuild history_ via flatMap so session results and history_ share
+    // the same object references — updates to one are reflected in both
+    history_ = sessions.flatMap(s => s.results || []);
+    // Apply persisted stage/notes by domain in case records are stale
+    const rawSN = localStorage.getItem('boris_stage_notes');
+    if (rawSN) {
+      const stageNotes = JSON.parse(rawSN);
+      history_.forEach(r => {
+        const d = extractDomain(r.website);
+        if (d && stageNotes[d]) {
+          r.stage = stageNotes[d].stage ?? r.stage;
+          r.notes = stageNotes[d].notes ?? r.notes;
+        }
+      });
+    }
+    if (sessions.length) {
+      const last = sessions[sessions.length - 1];
+      activeSessionId = last.id;
+      results = last.results || [];
+    }
+  } catch(e) {
+    sessions = []; history_ = []; results = [];
+  }
+}
+
+// ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('date-badge').textContent = new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
   loadKeys();
   updateConnStatus();
+  loadFromStorage();
+  renderTabs();
+  updateKPIs();
+  renderHistory();
 });
 
 // ════════════════════════════════════════════════════
@@ -1062,6 +1113,7 @@ async function runSearch() {
     };
     results.push(newEntry);
     history_.push(newEntry); // accumulate into master history
+    saveToStorage();
 
     updateKPIs(); renderTable();
     await sleep(100);
@@ -1347,6 +1399,7 @@ function renderTable() {
 
 function setStage(i, val) {
   results[i].stage = val;
+  saveToStorage();
 }
 
 // ════════════════════════════════════════════════════
@@ -1380,6 +1433,7 @@ async function pushToHubSpot(i) {
       results[i].pushedToHS = true;
       updateKPIs();
       renderTable();
+      saveToStorage();
       const verb = res.status === 200 ? 'Updated in HubSpot' : 'Added to HubSpot';
       toast(`${r.name} — ${verb} ✓`, 'success');
     } else {
@@ -1583,7 +1637,7 @@ async function pushToHubSpotHistory(i) {
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${hsKey}`},
       body: JSON.stringify({ properties: { name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r) } }),
     });
-    if (res.ok) { history_[i].pushedToHS=true; renderHistory(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
+    if (res.ok) { history_[i].pushedToHS=true; renderHistory(); saveToStorage(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
   } catch(e) { toast('HubSpot push failed','error'); }
 }
@@ -1592,6 +1646,7 @@ function clearHistory() {
   if (!confirm('Clear all search history? This cannot be undone.')) return;
   history_ = []; sessions = []; activeSessionId = null; results = [];
   renderTabs(); updateKPIs(); renderTable(); renderHistory();
+  saveToStorage();
   toast('History cleared', 'success');
 }
 
