@@ -7,6 +7,8 @@ function cleanDomain(raw) {
     .toLowerCase();
 }
 
+const BASE = 'https://api.hubspot.com';
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -18,7 +20,7 @@ module.exports = async (req, res) => {
   if (!properties) return res.status(400).json({ message: 'Missing properties' });
 
   const domain = cleanDomain(properties.domain || properties.website || '');
-  console.log('[hubspot] raw domain input:', properties.domain, '| website input:', properties.website, '| cleaned domain:', domain);
+  console.log('[hubspot] cleaned domain:', domain);
 
   if (!domain) return res.status(400).json({ message: 'Could not extract a domain from properties' });
 
@@ -30,49 +32,60 @@ module.exports = async (req, res) => {
   };
 
   try {
-    // Step 1: PATCH by domain — updates if a unique record exists
-    const patchUrl = `https://api.hubapi.com/crm/v3/objects/companies/${encodeURIComponent(domain)}?idProperty=domain`;
-    console.log('[hubspot] PATCH url:', patchUrl);
-    console.log('[hubspot] PATCH body properties keys:', Object.keys(cleanProps));
+    // Step 1: search for existing company by domain
+    const searchUrl = `${BASE}/crm/v3/objects/companies/search`;
+    console.log('[hubspot] searching:', searchUrl, 'domain:', domain);
 
-    const patchRes = await fetch(patchUrl, {
-      method: 'PATCH',
+    const searchRes = await fetch(searchUrl, {
+      method: 'POST',
       headers,
-      body: JSON.stringify({ properties: cleanProps }),
+      body: JSON.stringify({
+        filterGroups: [{
+          filters: [{
+            propertyName: 'domain',
+            operator: 'EQ',
+            value: domain,
+          }],
+        }],
+        properties: ['domain', 'name'],
+      }),
     });
 
-    const patchBody = await patchRes.json();
-    console.log('[hubspot] PATCH response status:', patchRes.status);
-    console.log('[hubspot] PATCH response body:', JSON.stringify(patchBody));
+    const searchBody = await searchRes.json();
+    console.log('[hubspot] search status:', searchRes.status, '| total:', searchBody.total);
 
-    if (patchRes.ok) {
-      return res.status(200).json(patchBody);
-    }
-
-    if (patchRes.status === 409) {
-      return res.status(409).json({
-        message: 'Multiple records found with this domain in HubSpot — please merge duplicates first',
+    if (searchRes.status === 403) {
+      return res.status(403).json({
+        message: 'Please add crm.objects.companies.read scope to your HubSpot private app',
       });
     }
 
-    // 400 can carry the non-unique error too
-    if (patchRes.status === 400) {
-      const msg = patchBody.message || '';
-      if (msg.includes('non-unique') || msg.includes('multiple')) {
-        return res.status(409).json({
-          message: 'Multiple records found with this domain in HubSpot — please merge duplicates first',
-        });
-      }
-      return res.status(400).json(patchBody);
+    if (!searchRes.ok) {
+      console.log('[hubspot] search error body:', JSON.stringify(searchBody));
+      return res.status(searchRes.status).json(searchBody);
     }
 
-    if (patchRes.status !== 404) {
-      return res.status(patchRes.status).json(patchBody);
+    if (searchBody.total > 0) {
+      // Step 2a: record found — PATCH by HubSpot record ID
+      const recordId = searchBody.results[0].id;
+      const patchUrl = `${BASE}/crm/v3/objects/companies/${recordId}`;
+      console.log('[hubspot] found record id:', recordId, '— PATCHing:', patchUrl);
+
+      const patchRes = await fetch(patchUrl, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ properties: cleanProps }),
+      });
+
+      const patchBody = await patchRes.json();
+      console.log('[hubspot] PATCH status:', patchRes.status, '| body:', JSON.stringify(patchBody));
+
+      return res.status(patchRes.ok ? 200 : patchRes.status).json(patchBody);
     }
 
-    // Step 2: 404 — no existing record, create a new one
-    const createUrl = 'https://api.hubapi.com/crm/v3/objects/companies';
-    console.log('[hubspot] PATCH returned 404 — falling back to POST create:', createUrl);
+    // Step 2b: no record found — POST to create
+    const createUrl = `${BASE}/crm/v3/objects/companies`;
+    console.log('[hubspot] no record found — POSTing to create:', createUrl);
 
     const createRes = await fetch(createUrl, {
       method: 'POST',
@@ -81,8 +94,7 @@ module.exports = async (req, res) => {
     });
 
     const createBody = await createRes.json();
-    console.log('[hubspot] POST response status:', createRes.status);
-    console.log('[hubspot] POST response body:', JSON.stringify(createBody));
+    console.log('[hubspot] POST status:', createRes.status, '| body:', JSON.stringify(createBody));
 
     return res.status(createRes.ok ? 201 : createRes.status).json(createBody);
 
