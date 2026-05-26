@@ -812,7 +812,7 @@ function saveToStorage() {
       if (d) stageNotes[d] = { stage: r.stage, notes: r.notes };
     });
     localStorage.setItem('boris_stage_notes', JSON.stringify(stageNotes));
-    console.log('Saving to storage:', history_.length, 'history items,', sessions.length, 'sessions');
+    console.log('Saving to storage:', history_.length, 'history items,', sessions.length, 'sessions:', sessions.map(s=>s.label).join(' | '));
   } catch(e) {
     console.error('saveToStorage error:', e);
   }
@@ -1528,6 +1528,7 @@ async function processUpload() {
   const searchDate = new Date().toLocaleDateString('en-GB');
   const entries = uploadedCompanies.map(c=>({ ...c, phone:'', address:'', chatStatus:'pending', tier:null, platforms:[], score:0, stage:'Not Contacted', pushedToHS:false, notes:'', searchLabel:sessionLabel, searchDate }));
   entries.forEach(e => { results.push(e); history_.push(e); });
+  saveToStorage(); // persist session + entries before scan starts, mirrors runSearch()
 
   showPage('dashboard', document.querySelector('.tab'));
   document.getElementById('progress-wrap').style.display = 'block';
