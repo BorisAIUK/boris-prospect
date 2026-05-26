@@ -1362,6 +1362,7 @@ async function pushToHubSpot(i) {
     website: r.website ? 'https://'+r.website : '',
     phone: r.phone || '',
     description: buildHsDescription(r),
+    chatbot_presence: getChatbotPresence(r),
   };
 
   try {
@@ -1386,6 +1387,14 @@ async function pushToHubSpot(i) {
   } catch(e) {
     toast('HubSpot push failed — check your token', 'error');
   }
+}
+
+function getChatbotPresence(r) {
+  if (r.chatStatus === 'none') return 'No chatbot';
+  if (r.chatStatus === 'blocked') return 'Blocked';
+  if (r.chatStatus === 'competitor' && r.tier === 'basic') return 'Basic Chat';
+  if (r.chatStatus === 'competitor' && (r.tier === 'mid' || r.tier === 'enterprise')) return 'Competitor';
+  return '';
 }
 
 function buildHsDescription(r) {
@@ -1566,7 +1575,7 @@ async function pushToHubSpotHistory(i) {
     const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${hsKey}`},
-      body: JSON.stringify({ properties: { name:r.name, website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r) } }),
+      body: JSON.stringify({ properties: { name:r.name, website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r) } }),
     });
     if (res.ok) { history_[i].pushedToHS=true; renderHistory(); toast(`${r.name} pushed to HubSpot ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
