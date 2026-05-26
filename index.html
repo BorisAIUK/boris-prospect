@@ -1441,13 +1441,10 @@ async function pushToHubSpot(i) {
   };
 
   try {
-    const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies?idProperty=domain', {
+    const res = await fetch('/api/hubspot', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${hsKey}`,
-      },
-      body: JSON.stringify({ properties: props }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: hsKey, properties: props }),
     });
 
     if (res.ok) {
@@ -1666,10 +1663,10 @@ async function pushToHubSpotHistory(i) {
   const hsKey = getHsKey();
   if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
   try {
-    const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies?idProperty=domain', {
+    const res = await fetch('/api/hubspot', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${hsKey}`},
-      body: JSON.stringify({ properties: { name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r) } }),
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token:hsKey, properties:{ name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r) } }),
     });
     if (res.ok) { history_[i].pushedToHS=true; renderHistory(); saveToStorage(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
