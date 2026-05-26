@@ -20,70 +20,37 @@ module.exports = async (req, res) => {
   const domain = cleanDomain(properties.domain || properties.website || '');
   if (!domain) return res.status(400).json({ message: 'Could not extract a domain from properties' });
 
-  // Always write a clean domain
   const cleanProps = { ...properties, domain };
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  };
-
   try {
-    // Step 1: search for an existing company matching this domain
-    const searchRes = await fetch(
-      'https://api.hubapi.com/crm/v3/objects/companies/search',
+    const hsRes = await fetch(
+      'https://api.hubapi.com/crm/v3/objects/companies/batch/upsert',
       {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          filterGroups: [{
-            filters: [{
-              propertyName: 'domain',
-              operator: 'EQ',
-              value: domain,
-            }],
+          inputs: [{
+            idProperty: 'domain',
+            id: domain,
+            properties: cleanProps,
           }],
-          properties: ['domain'],
-          limit: 1,
         }),
       }
     );
 
-    if (!searchRes.ok) {
-      const err = await searchRes.json();
-      return res.status(searchRes.status).json(err);
+    const data = await hsRes.json();
+
+    if (!hsRes.ok) {
+      return res.status(hsRes.status).json(data);
     }
 
-    const searchData = await searchRes.json();
-    const existing = searchData.results && searchData.results[0];
-
-    if (existing) {
-      // Step 2a: PATCH the existing record
-      const patchRes = await fetch(
-        `https://api.hubapi.com/crm/v3/objects/companies/${existing.id}`,
-        {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({ properties: cleanProps }),
-        }
-      );
-      const patchData = await patchRes.json();
-      // Return 200 so the client toast shows "Updated in HubSpot"
-      return res.status(patchRes.ok ? 200 : patchRes.status).json(patchData);
-    }
-
-    // Step 2b: POST to create a new record
-    const createRes = await fetch(
-      'https://api.hubapi.com/crm/v3/objects/companies',
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ properties: cleanProps }),
-      }
-    );
-    const createData = await createRes.json();
-    // Return 201 so the client toast shows "Added to HubSpot"
-    return res.status(createRes.ok ? 201 : createRes.status).json(createData);
+    // Distinguish create vs update: for a new record createdAt === updatedAt
+    const record = data.results && data.results[0];
+    const wasCreated = record && record.createdAt === record.updatedAt;
+    return res.status(wasCreated ? 201 : 200).json(data);
 
   } catch (e) {
     return res.status(502).json({ message: 'Upstream HubSpot request failed', error: e.message });
