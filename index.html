@@ -840,6 +840,17 @@ function loadFromStorage() {
         }
       });
     }
+    // Clean up any entries that were mid-scan when the page was closed
+    let interrupted = 0;
+    history_.forEach(r => {
+      if (r.chatStatus === 'pending') {
+        r.chatStatus = 'blocked';
+        r.score = r.score || 5;
+        r.notes = r.notes ? r.notes + ' [Scan interrupted]' : 'Scan interrupted';
+        interrupted++;
+      }
+    });
+    if (interrupted) console.log('loadFromStorage: resolved', interrupted, 'interrupted (pending) entries to blocked');
     if (sessions.length) {
       const last = sessions[sessions.length - 1];
       activeSessionId = last.id;
@@ -1160,8 +1171,9 @@ async function runSearch() {
 
 function stopSearch() {
   stopFlag = true;
+  document.getElementById('btn-search').disabled = false;
   document.getElementById('btn-stop').disabled = true;
-  document.getElementById('search-status').textContent = 'Stopping…';
+  document.getElementById('search-status').textContent = 'Stopped';
 }
 
 function resetSearch() {
