@@ -1522,18 +1522,28 @@ function parseCSV(file) {
 
 async function processUpload() {
   if (!uploadedCompanies.length) return;
-  results = uploadedCompanies.map(c=>({ ...c, phone:'', address:'', chatStatus:'pending', tier:null, platforms:[], score:0, stage:'Not Contacted', pushedToHS:false, notes:'' }));
+
+  const sessionLabel = 'Uploaded list · ' + new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  const session = createSession(sessionLabel);
+  results = session.results;
+
+  const searchDate = new Date().toLocaleDateString('en-GB');
+  const entries = uploadedCompanies.map(c=>({ ...c, phone:'', address:'', chatStatus:'pending', tier:null, platforms:[], score:0, stage:'Not Contacted', pushedToHS:false, notes:'', searchLabel:sessionLabel, searchDate }));
+  entries.forEach(e => { results.push(e); history_.push(e); });
 
   showPage('dashboard', document.querySelector('.tab'));
   document.getElementById('progress-wrap').style.display = 'block';
-  document.getElementById('last-search-label').textContent = 'Uploaded list';
-  updateKPIs(); renderTable();
+  document.getElementById('last-search-label').textContent = sessionLabel;
+  stopFlag = false;
+  document.getElementById('btn-search').disabled = true;
+  document.getElementById('btn-stop').disabled = false;
+  updateKPIs(); renderTable(); renderTabs();
 
   for (let i=0; i<results.length; i++) {
     if (stopFlag) break;
     const r = results[i];
     setProgress((i/results.length)*100, `Scanning ${r.name}…`);
-    if (!r.website) { r.chatStatus='blocked'; continue; }
+    if (!r.website) { r.chatStatus='blocked'; r.score=5; updateKPIs(); renderTable(); continue; }
     const d = await detectChat(r.website);
     r.chatStatus=d.status; r.platforms=d.platforms; r.tier=d.tier;
     r.score=calcScore(d, r.website, r.name);
@@ -1542,8 +1552,11 @@ async function processUpload() {
   }
 
   results.sort((a,b)=>b.score-a.score);
+  saveToStorage();
   setProgress(100, `✓ Done — ${results.length} companies scanned`);
-  updateKPIs(); renderTable();
+  document.getElementById('btn-search').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  updateKPIs(); renderTable(); renderTabs();
   setTimeout(()=>{ document.getElementById('progress-wrap').style.display='none'; }, 2000);
 }
 
