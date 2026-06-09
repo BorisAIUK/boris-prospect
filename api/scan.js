@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
 
   let browser;
   try {
-    const executablePath = await chromium.executablePath();
+    const executablePath = await chromium.executablePath('/tmp/chromium');
     console.log('executablePath:', executablePath);
 
     console.log('launching chromium...');
@@ -26,6 +26,7 @@ module.exports = async function handler(req, res) {
       defaultViewport: chromium.defaultViewport,
       executablePath,
       headless: chromium.headless,
+      ignoreHTTPSErrors: true,
     });
     console.log('chromium launched');
 
