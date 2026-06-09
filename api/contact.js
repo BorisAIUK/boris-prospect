@@ -1,3 +1,6 @@
+// Creates a HubSpot contact and associates it with an existing company.
+// NEVER creates a company record — only reads companies via search.
+
 function cleanDomain(raw) {
   return (raw || '')
     .replace(/^https?:\/\//i, '')
@@ -40,10 +43,10 @@ module.exports = async (req, res) => {
     }
 
     const contactId = createBody.id;
+    const domain    = cleanDomain(companyDomain);
 
-    // Step 2: find company by domain
-    if (companyDomain) {
-      const domain = cleanDomain(companyDomain);
+    // Step 2: search for existing company by domain (read-only — never creates)
+    if (domain) {
       const searchRes  = await fetch(`${BASE}/crm/v3/objects/companies/search`, {
         method: 'POST', headers,
         body: JSON.stringify({
@@ -55,10 +58,9 @@ module.exports = async (req, res) => {
       console.log('[contact] company search status:', searchRes.status, '| total:', searchBody.total);
 
       if (searchRes.ok && searchBody.total > 0) {
+        // Step 3: associate contact → existing company
         const companyId = searchBody.results[0].id;
-
-        // Step 3: associate contact → company
-        const assocRes = await fetch(
+        const assocRes  = await fetch(
           `${BASE}/crm/v4/objects/contacts/${contactId}/associations/companies/${companyId}/labels`,
           {
             method: 'POST', headers,
@@ -66,10 +68,15 @@ module.exports = async (req, res) => {
           }
         );
         console.log('[contact] association status:', assocRes.status);
+        return res.status(200).json({ success: true, linked: true });
       }
+
+      // Company not found — contact created but not linked (no company creation)
+      console.log('[contact] no company found for domain:', domain, '— contact created without link');
+      return res.status(200).json({ success: true, linked: false });
     }
 
-    return res.status(200).json({ success: true, created: true });
+    return res.status(200).json({ success: true, linked: false });
   } catch (e) {
     console.error('[contact] exception:', e.message);
     return res.status(200).json({ error: e.message || 'Request failed' });

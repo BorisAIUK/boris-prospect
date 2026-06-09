@@ -1905,8 +1905,9 @@ async function submitContact() {
       toast(`Error: ${data.error}`, 'error');
     } else {
       toast('Contact added to HubSpot ✓', 'success');
+      if (_contactRecord) _contactRecord.contactAdded = true;
+      saveToStorage();
       closeContactModal();
-      if (_contactRecord) { _contactRecord.contactAdded = true; saveToStorage(); }
       renderTable();
       renderHistory();
     }
