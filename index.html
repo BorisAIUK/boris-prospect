@@ -1269,26 +1269,12 @@ async function detectChat(domain) {
   const url = 'https://' + domain;
   let html = '';
 
-  // Primary: headless Chromium via serverless function (full JS execution)
+  // Try direct fetch first
   try {
-    const resp = await fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-      signal: AbortSignal.timeout(35000),
-    });
-    const data = await resp.json();
-    if (data.html && data.html.length > 100) html = data.html;
+    html = await fetch(url, { signal: AbortSignal.timeout(9000), mode:'cors' }).then(r=>r.text());
   } catch(e) {}
 
-  // Fallback 1: direct fetch (no JS execution, but fast)
-  if (!html) {
-    try {
-      html = await fetch(url, { signal: AbortSignal.timeout(9000), mode:'cors' }).then(r=>r.text());
-    } catch(e) {}
-  }
-
-  // Fallback 2: allorigins proxy
+  // Proxy fallback 1
   if (!html) {
     try {
       const j = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.json());
@@ -1296,7 +1282,7 @@ async function detectChat(domain) {
     } catch(e) {}
   }
 
-  // Fallback 3: corsproxy.io
+  // Proxy fallback 2
   if (!html) {
     try {
       html = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.text());

@@ -1,14 +1,9 @@
 {
   "functions": {
-    "api/hubspot.js": { "maxDuration": 10 },
-    "api/scan.js": { "maxDuration": 30 }
+    "api/hubspot.js": { "maxDuration": 10 }
   },
   "routes": [
     { "src": "/api/hubspot", "dest": "/api/hubspot.js" },
-    { "src": "/api/scan", "dest": "/api/scan.js" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "env": {
-    "SCRAPINGBEE_API_KEY": "@scrapingbee_api_key"
-  }
+  ]
 }
