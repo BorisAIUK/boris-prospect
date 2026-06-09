@@ -13,14 +13,21 @@ module.exports = async function handler(req, res) {
   const { url } = req.body || {};
   if (!url) return res.status(400).json({ error: 'Missing url' });
 
+  console.log('scan started for:', url);
+
   let browser;
   try {
+    const executablePath = await chromium.executablePath();
+    console.log('executablePath:', executablePath);
+
+    console.log('launching chromium...');
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: chromium.headless,
     });
+    console.log('chromium launched');
 
     const page = await browser.newPage();
 
@@ -37,14 +44,18 @@ module.exports = async function handler(req, res) {
       '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     );
 
+    console.log('navigating to', url, '...');
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 10000 });
 
     // Wait 3 s for any deferred widget scripts to initialise
     await new Promise(r => setTimeout(r, 3000));
 
     const html = await page.content();
+    console.log('page loaded, html length:', html.length);
     return res.status(200).json({ html });
   } catch (err) {
+    console.error('scan error:', err.message);
+    console.error('stack:', err.stack);
     return res.status(200).json({ error: err.message || 'Scan failed' });
   } finally {
     if (browser) await browser.close().catch(() => {});
