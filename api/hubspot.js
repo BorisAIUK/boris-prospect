@@ -15,6 +15,8 @@ module.exports = async (req, res) => {
   }
 
   const { token, properties } = req.body || {};
+  const _logDomain = cleanDomain(properties?.domain || properties?.website || '');
+  console.log('hubspot.js: called for domain:', _logDomain);
 
   if (!token) return res.status(400).json({ message: 'Missing HubSpot token' });
   if (!properties) return res.status(400).json({ message: 'Missing properties' });
