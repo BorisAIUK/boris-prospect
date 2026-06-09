@@ -765,16 +765,16 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 // ════════════════════════════════════════════════════
 const PLATFORMS = [
   // Enterprise
-  { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com"] },
+  { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com","intercom.com"] },
   { name:"Drift",           tier:"enterprise", score:85, patterns:["drift.com","js.drift.com","driftt.com"] },
   { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zendesk.com","zopim.com","ze-snippet"] },
   { name:"Salesforce Chat", tier:"enterprise", score:78, patterns:["force.com/embeddedservice"] },
   { name:"LivePerson",      tier:"enterprise", score:76, patterns:["liveperson.net","lpcdn.lpsnmedia"] },
   // Mid
-  { name:"HubSpot Chat",    tier:"mid", score:70, patterns:["js.hs-scripts.com","hubspot.com/conversations"] },
+  { name:"HubSpot Chat",    tier:"mid", score:70, patterns:["js.hs-scripts.com","hubspot.com/conversations","hubspot.com","hs-scripts.com"] },
   { name:"Freshchat",       tier:"mid", score:66, patterns:["freshchat.com","wchat.freshchat.io"] },
   { name:"Crisp",           tier:"mid", score:62, patterns:["crisp.chat","client.crisp.chat"] },
-  { name:"Tidio",           tier:"mid", score:60, patterns:["code.tidio.co","tidiochat.com"] },
+  { name:"Tidio",           tier:"mid", score:60, patterns:["code.tidio.co","tidiochat.com","tidio.com"] },
   { name:"Smartsupp",       tier:"mid", score:58, patterns:["smartsupp.com/loader"] },
   { name:"Help Scout",      tier:"mid", score:56, patterns:["beacon-v2.helpscout.net"] },
   { name:"Kommunicate",     tier:"mid", score:54, patterns:["kommunicate.io"] },
@@ -1268,10 +1268,12 @@ function resetSearch() {
 async function detectChat(domain) {
   const url = 'https://' + domain;
   let html = '';
+  let source = '';
 
   // Try direct fetch first
   try {
     html = await fetch(url, { signal: AbortSignal.timeout(9000), mode:'cors' }).then(r=>r.text());
+    if (html) source = 'direct';
   } catch(e) {}
 
   // Proxy fallback 1
@@ -1279,6 +1281,7 @@ async function detectChat(domain) {
     try {
       const j = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.json());
       html = j.contents || '';
+      if (html) source = 'allorigins';
     } catch(e) {}
   }
 
@@ -1286,8 +1289,12 @@ async function detectChat(domain) {
   if (!html) {
     try {
       html = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.text());
+      if (html) source = 'corsproxy';
     } catch(e) {}
   }
+
+  console.log(`[detectChat] ${domain} — source: ${source || 'none'}, html.length: ${html.length}`);
+  if (html.length > 0) console.log(`[detectChat] ${domain} — first 500 chars:`, html.slice(0, 500));
 
   if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null };
 
