@@ -1855,15 +1855,13 @@ async function pushToHubSpotHistory(i) {
 // ADD CONTACT MODAL
 // ════════════════════════════════════════════════════
 let _contactDomain = '';
-let _contactIdx    = -1;
-let _contactSource = '';
+let _contactRecord = null; // direct object reference — no index lookup needed
 
 function openContactModal(idx, source) {
   const r = source === 'history' ? history_[idx] : results[idx];
   if (!r) return;
+  _contactRecord = r;
   _contactDomain = extractDomain(r.website);
-  _contactIdx    = idx;
-  _contactSource = source;
   document.getElementById('contact-modal-sub').textContent = r.name;
   document.getElementById('c-firstname').value  = '';
   document.getElementById('c-lastname').value   = '';
@@ -1908,9 +1906,9 @@ async function submitContact() {
     } else {
       toast('Contact added to HubSpot ✓', 'success');
       closeContactModal();
-      const rec = _contactSource === 'history' ? history_[_contactIdx] : results[_contactIdx];
-      if (rec) { rec.contactAdded = true; saveToStorage(); }
-      if (_contactSource === 'history') renderHistory(); else { renderTable(); renderHistory(); }
+      if (_contactRecord) { _contactRecord.contactAdded = true; saveToStorage(); }
+      renderTable();
+      renderHistory();
     }
   } catch(e) {
     toast('Failed to reach server', 'error');
