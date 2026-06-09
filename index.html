@@ -1268,32 +1268,20 @@ function resetSearch() {
 async function detectChat(domain) {
   const url = 'https://' + domain;
   let html = '';
-  let source = '';
 
-  // Try direct fetch first
+  // Fetch via serverless proxy to avoid CORS restrictions
   try {
-    html = await fetch(url, { signal: AbortSignal.timeout(9000), mode:'cors' }).then(r=>r.text());
-    if (html) source = 'direct';
+    const resp = await fetch('/api/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = await resp.json();
+    html = data.html || '';
   } catch(e) {}
 
-  // Proxy fallback 1
-  if (!html) {
-    try {
-      const j = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.json());
-      html = j.contents || '';
-      if (html) source = 'allorigins';
-    } catch(e) {}
-  }
-
-  // Proxy fallback 2
-  if (!html) {
-    try {
-      html = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(12000) }).then(r=>r.text());
-      if (html) source = 'corsproxy';
-    } catch(e) {}
-  }
-
-  console.log(`[detectChat] ${domain} — source: ${source || 'none'}, html.length: ${html.length}`);
+  console.log(`[detectChat] ${domain} — html.length: ${html.length}`);
   if (html.length > 0) console.log(`[detectChat] ${domain} — first 500 chars:`, html.slice(0, 500));
 
   if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null };
