@@ -792,6 +792,7 @@ const PLATFORMS = [
   { name:"Chatbase",        tier:"basic", score:30, patterns:["chatbase.co"] },
   { name:"Botpress",        tier:"basic", score:30, patterns:["cdn.botpress.cloud"] },
   { name:"Voiceflow",       tier:"basic", score:28, patterns:["voiceflow.com/widget"] },
+  { name:"CustomGPT",       tier:"basic", score:32, patterns:["customgpt.ai","cgpt-","customgpt-","data-customgpt","customgpt_widget"] },
 ];
 
 const TIER_LABEL = { enterprise:'🔴 Enterprise', mid:'🔵 Competitor', basic:'🟡 Basic' };
@@ -1291,10 +1292,27 @@ async function detectChat(domain) {
   if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null };
 
   const lower = html.toLowerCase();
+
+  // Build an enriched search corpus: raw HTML + script src values + inline script bodies + data-* attributes
+  const scriptSrcs    = [...html.matchAll(/src\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]).join(' ');
+  const inlineScripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join(' ');
+  const dataAttrs     = [...html.matchAll(/data-[\w-]+\s*=\s*["'][^"']*["']/gi)].map(m => m[0]).join(' ');
+
+  // Global variable signals injected by chat widgets into inline scripts
+  const GLOBAL_SIGNALS = [
+    'window.__customgpt', 'window.tidioChat', 'window.tidioChatApi',
+    'window.$crisp',      'window.hubspotConversations',  'window.intercom',
+    'window.drift',       'window.zE',                    'window.liveagent',
+    'window.freshchat',   'window.kommunicate',            'tawk_api',
+  ];
+  const globalHits = GLOBAL_SIGNALS.filter(sig => inlineScripts.toLowerCase().includes(sig.toLowerCase())).join(' ');
+
+  const corpus = [lower, scriptSrcs.toLowerCase(), inlineScripts.toLowerCase(), dataAttrs.toLowerCase(), globalHits.toLowerCase()].join(' ');
+
   const found = [];
   for (const p of PLATFORMS) {
     for (const pat of p.patterns) {
-      if (lower.includes(pat)) { found.push(p); break; }
+      if (corpus.includes(pat.toLowerCase())) { found.push(p); break; }
     }
   }
 
