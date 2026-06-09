@@ -367,6 +367,47 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 }
 .hs-btn-sent:hover { background: rgba(34,197,94,0.2); }
 
+/* Add Contact button */
+.contact-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--sans); font-size: 0.7rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 6px; border: none;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  background: rgba(6,182,212,0.12); color: var(--cyan);
+  border: 1px solid rgba(6,182,212,0.3);
+}
+.contact-btn:hover { background: rgba(6,182,212,0.22); }
+
+/* Contact modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 1.75rem; width: 100%; max-width: 420px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.modal-title {
+  font-family: var(--display); font-size: 1rem; font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.modal-sub {
+  font-size: 0.78rem; color: var(--text3); margin-bottom: 1.25rem;
+}
+.modal-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.85rem; }
+.modal-field label { font-size: 0.75rem; color: var(--text2); font-weight: 500; }
+.modal-input {
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--sans); font-size: 0.82rem;
+  padding: 0.55rem 0.8rem; border-radius: 8px; outline: none;
+  transition: border-color 0.15s;
+}
+.modal-input:focus { border-color: var(--cyan); }
+.modal-actions { display: flex; gap: 0.6rem; margin-top: 1.25rem; justify-content: flex-end; }
+
 /* Hunter.io button */
 .hunter-btn {
   display: inline-flex; align-items: center; gap: 0.3rem;
@@ -769,6 +810,34 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- ADD CONTACT MODAL -->
+<div class="modal-overlay" id="contact-modal" onclick="if(event.target===this)closeContactModal()">
+  <div class="modal-box">
+    <div class="modal-title">Add Contact to HubSpot</div>
+    <div class="modal-sub" id="contact-modal-sub"></div>
+    <div class="modal-field">
+      <label>First Name</label>
+      <input class="modal-input" id="c-firstname" placeholder="First name" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Last Name</label>
+      <input class="modal-input" id="c-lastname" placeholder="Last name" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Email Address</label>
+      <input class="modal-input" id="c-email" type="email" placeholder="email@company.com" autocomplete="off">
+    </div>
+    <div class="modal-field">
+      <label>Job Title</label>
+      <input class="modal-input" id="c-jobtitle" value="Marketing Manager" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeContactModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="contact-submit-btn" onclick="submitContact()">Push to HubSpot</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════════════
@@ -1457,11 +1526,12 @@ function renderTable() {
       ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpot(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpot(${globalIdx})">→ HubSpot</button>`;
 
-    // Hunter.io button
+    // Hunter.io + Add Contact buttons
     const hunterDomain = extractDomain(r.website);
     const hunterBtn = hunterDomain
       ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
+    const addContactBtn = `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
 
     // What to say
     let pitch = '';
@@ -1487,7 +1557,7 @@ function renderTable() {
           ${stageOpts}
         </select>
       </td>
-      <td>${hunterBtn}</td>
+      <td style="white-space:nowrap">${hunterBtn} ${addContactBtn}</td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -1723,6 +1793,7 @@ function renderHistory() {
     const hunterBtnH = hDomain
       ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
+    const addContactBtnH = `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
@@ -1740,7 +1811,7 @@ function renderHistory() {
       </td>
       <td>${chatBadge}</td>
       <td>${r.platforms&&r.platforms.length?r.platforms.map(p=>`<span class="ptag">${p}</span>`).join(''):'—'}</td>
-      <td>${hunterBtnH}</td>
+      <td style="white-space:nowrap">${hunterBtnH} ${addContactBtnH}</td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -1770,6 +1841,68 @@ async function pushToHubSpotHistory(i) {
     if (res.ok) { history_[i].pushedToHS=true; renderHistory(); saveToStorage(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
   } catch(e) { toast('HubSpot push failed','error'); }
+}
+
+// ════════════════════════════════════════════════════
+// ADD CONTACT MODAL
+// ════════════════════════════════════════════════════
+let _contactDomain = '';
+
+function openContactModal(idx, source) {
+  const r = source === 'history' ? history_[idx] : results[idx];
+  if (!r) return;
+  _contactDomain = extractDomain(r.website);
+  document.getElementById('contact-modal-sub').textContent = r.name;
+  document.getElementById('c-firstname').value  = '';
+  document.getElementById('c-lastname').value   = '';
+  document.getElementById('c-email').value      = '';
+  document.getElementById('c-jobtitle').value   = 'Marketing Manager';
+  document.getElementById('contact-modal').classList.add('open');
+  document.getElementById('c-firstname').focus();
+}
+
+function closeContactModal() {
+  document.getElementById('contact-modal').classList.remove('open');
+}
+
+async function submitContact() {
+  const hsKey = getHsKey();
+  if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
+
+  const firstname = document.getElementById('c-firstname').value.trim();
+  const lastname  = document.getElementById('c-lastname').value.trim();
+  const email     = document.getElementById('c-email').value.trim();
+  const jobtitle  = document.getElementById('c-jobtitle').value.trim();
+
+  if (!email) return toast('Email address is required', 'error');
+
+  const btn = document.getElementById('contact-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Pushing…';
+
+  try {
+    const resp = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: hsKey,
+        contactProperties: { firstname, lastname, email, jobtitle },
+        companyDomain: _contactDomain,
+      }),
+    });
+    const data = await resp.json();
+    if (data.error) {
+      toast(`Error: ${data.error}`, 'error');
+    } else {
+      toast('Contact added to HubSpot ✓', 'success');
+      closeContactModal();
+    }
+  } catch(e) {
+    toast('Failed to reach server', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Push to HubSpot';
+  }
 }
 
 function clearHistory() {

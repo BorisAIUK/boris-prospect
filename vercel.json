@@ -1,11 +1,13 @@
 {
   "functions": {
-    "api/hubspot.js": { "maxDuration": 10 },
-    "api/fetch.js":   { "maxDuration": 15 }
+    "api/hubspot.js":  { "maxDuration": 10 },
+    "api/fetch.js":    { "maxDuration": 15 },
+    "api/contact.js":  { "maxDuration": 15 }
   },
   "routes": [
     { "src": "/api/hubspot", "dest": "/api/hubspot.js" },
     { "src": "/api/fetch",   "dest": "/api/fetch.js" },
+    { "src": "/api/contact", "dest": "/api/contact.js" },
     { "src": "/(.*)",        "dest": "/index.html" }
   ]
 }
