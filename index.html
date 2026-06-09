@@ -367,6 +367,17 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 }
 .hs-btn-sent:hover { background: rgba(34,197,94,0.2); }
 
+/* Hunter.io button */
+.hunter-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--sans); font-size: 0.7rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 6px; border: none;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  background: rgba(168,85,247,0.12); color: #a855f7;
+  border: 1px solid rgba(168,85,247,0.3); text-decoration: none;
+}
+.hunter-btn:hover { background: rgba(168,85,247,0.22); }
+
 /* Stage select */
 .stage-sel {
   background: var(--surface2); border: 1px solid var(--border2);
@@ -1446,6 +1457,12 @@ function renderTable() {
       ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpot(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpot(${globalIdx})">→ HubSpot</button>`;
 
+    // Hunter.io button
+    const hunterDomain = extractDomain(r.website);
+    const hunterBtn = hunterDomain
+      ? `<a class="hunter-btn" href="https://hunter.io/domain-search/${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+      : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
+
     // What to say
     let pitch = '';
     if (r.chatStatus === 'none') pitch = `<div style="font-size:0.65rem;color:var(--green);margin-top:0.2rem">No chatbot — greenfield opportunity</div>`;
@@ -1470,6 +1487,7 @@ function renderTable() {
           ${stageOpts}
         </select>
       </td>
+      <td>${hunterBtn}</td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -1485,6 +1503,7 @@ function renderTable() {
           <th style="width:140px">Chat Status</th>
           <th style="width:160px">Platform Detected</th>
           <th style="width:160px">Stage</th>
+          <th style="width:120px">Find Contact</th>
           <th style="width:110px">HubSpot</th>
         </tr>
       </thead>
@@ -1700,6 +1719,10 @@ function renderHistory() {
     const hsBtn = r.pushedToHS
       ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpotHistory(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
+    const hDomain = extractDomain(r.website);
+    const hunterBtnH = hDomain
+      ? `<a class="hunter-btn" href="https://hunter.io/domain-search/${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+      : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
@@ -1717,6 +1740,7 @@ function renderHistory() {
       </td>
       <td>${chatBadge}</td>
       <td>${r.platforms&&r.platforms.length?r.platforms.map(p=>`<span class="ptag">${p}</span>`).join(''):'—'}</td>
+      <td>${hunterBtnH}</td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -1726,7 +1750,7 @@ function renderHistory() {
       <thead><tr>
         <th style="width:36px">#</th><th style="width:38px">Score</th>
         <th>Company</th><th>Contact</th><th>Chat Status</th>
-        <th>Platform</th><th style="width:110px">HubSpot</th>
+        <th>Platform</th><th style="width:120px">Find Contact</th><th style="width:110px">HubSpot</th>
       </tr></thead>
       <tbody>${trs}</tbody>
     </table>`;
