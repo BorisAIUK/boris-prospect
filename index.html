@@ -1531,7 +1531,9 @@ function renderTable() {
     const hunterBtn = hunterDomain
       ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
-    const addContactBtn = `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
+    const addContactBtn = r.pushedToHS
+      ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`
+      : `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Push company to HubSpot first">👤 Add Contact</button>`;
 
     // What to say
     let pitch = '';
@@ -1793,7 +1795,9 @@ function renderHistory() {
     const hunterBtnH = hDomain
       ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
-    const addContactBtnH = `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
+    const addContactBtnH = r.pushedToHS
+      ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`
+      : `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Push company to HubSpot first">👤 Add Contact</button>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
