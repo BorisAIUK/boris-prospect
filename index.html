@@ -1460,7 +1460,7 @@ function renderTable() {
     // Hunter.io button
     const hunterDomain = extractDomain(r.website);
     const hunterBtn = hunterDomain
-      ? `<a class="hunter-btn" href="https://hunter.io/domain-search/${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+      ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
 
     // What to say
@@ -1721,7 +1721,7 @@ function renderHistory() {
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
     const hDomain = extractDomain(r.website);
     const hunterBtnH = hDomain
-      ? `<a class="hunter-btn" href="https://hunter.io/domain-search/${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+      ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
