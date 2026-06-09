@@ -764,31 +764,31 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 // PLATFORM DEFINITIONS
 // ════════════════════════════════════════════════════
 const PLATFORMS = [
-  // Enterprise
-  { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com","intercom.com"] },
-  { name:"Drift",           tier:"enterprise", score:85, patterns:["drift.com","js.drift.com","driftt.com"] },
-  { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zendesk.com","zopim.com","ze-snippet"] },
-  { name:"Salesforce Chat", tier:"enterprise", score:78, patterns:["force.com/embeddedservice"] },
+  // Enterprise — chat-widget-specific patterns only
+  { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com"] },
+  { name:"Drift",           tier:"enterprise", score:85, patterns:["js.drift.com","driftt.com"] },
+  { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zopim.com","ze-snippet","zendesk.com/embeddable_framework","zd-messenger"] },
+  { name:"Salesforce Chat", tier:"enterprise", score:78, patterns:["force.com/embeddedservice/chat","liveagent.salesforce.com"] },
   { name:"LivePerson",      tier:"enterprise", score:76, patterns:["liveperson.net","lpcdn.lpsnmedia"] },
-  // Mid
-  { name:"HubSpot Chat",    tier:"mid", score:70, patterns:["js.hs-scripts.com","hubspot.com/conversations","hubspot.com","hs-scripts.com"] },
-  { name:"Freshchat",       tier:"mid", score:66, patterns:["freshchat.com","wchat.freshchat.io"] },
+  // Mid — chat-widget-specific patterns only
+  { name:"HubSpot Chat",    tier:"mid", score:70, patterns:["hubspot.com/conversations","hubspot-messages","usemessages.com"] },
+  { name:"Freshchat",       tier:"mid", score:66, patterns:["wchat.freshchat.io","freshchat.com/js/widget"] },
   { name:"Crisp",           tier:"mid", score:62, patterns:["crisp.chat","client.crisp.chat"] },
-  { name:"Tidio",           tier:"mid", score:60, patterns:["code.tidio.co","tidiochat.com","tidio.com"] },
+  { name:"Tidio",           tier:"mid", score:60, patterns:["code.tidio.co","tidiochat.com"] },
   { name:"Smartsupp",       tier:"mid", score:58, patterns:["smartsupp.com/loader"] },
   { name:"Help Scout",      tier:"mid", score:56, patterns:["beacon-v2.helpscout.net"] },
   { name:"Kommunicate",     tier:"mid", score:54, patterns:["kommunicate.io"] },
   { name:"Kustomer",        tier:"mid", score:54, patterns:["cdn.kustomerapp.com"] },
   { name:"Gorgias",         tier:"mid", score:52, patterns:["config.gorgias.chat"] },
   { name:"Userlike",        tier:"mid", score:50, patterns:["userlike.com/widget"] },
-  // Basic
-  { name:"Tawk.to",         tier:"basic", score:46, patterns:["tawk.to","embed.tawk.to","tawk_api"] },
+  // Basic — chat-widget-specific patterns only
+  { name:"Tawk.to",         tier:"basic", score:46, patterns:["embed.tawk.to","tawk_api"] },
   { name:"LiveChat",        tier:"basic", score:44, patterns:["livechatinc.com","cdn.livechatinc.com"] },
-  { name:"Olark",           tier:"basic", score:40, patterns:["olark.com","static.olark.com"] },
+  { name:"Olark",           tier:"basic", score:40, patterns:["static.olark.com"] },
   { name:"PureChat",        tier:"basic", score:38, patterns:["purechat.com"] },
   { name:"Chatra",          tier:"basic", score:36, patterns:["call.chatra.io"] },
   { name:"LiveAgent",       tier:"basic", score:34, patterns:["ladesk.com"] },
-  { name:"Landbot",         tier:"basic", score:34, patterns:["landbot.io","cdn.landbot.io"] },
+  { name:"Landbot",         tier:"basic", score:34, patterns:["cdn.landbot.io"] },
   { name:"Chatbase",        tier:"basic", score:30, patterns:["chatbase.co"] },
   { name:"Botpress",        tier:"basic", score:30, patterns:["cdn.botpress.cloud"] },
   { name:"Voiceflow",       tier:"basic", score:28, patterns:["voiceflow.com/widget"] },
