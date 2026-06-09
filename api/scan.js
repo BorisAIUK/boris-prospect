@@ -1,6 +1,5 @@
 // headless browser scanner v2
-const chromium = require('@sparticuz/chromium');
-const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,11 +16,11 @@ module.exports = async function handler(req, res) {
 
   let browser;
   try {
-    const executablePath = await chromium.executablePath('/tmp/chromium');
+    const executablePath = await chromium.executablePath;
     console.log('executablePath:', executablePath);
 
     console.log('launching chromium...');
-    browser = await puppeteer.launch({
+    browser = await chromium.puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath,
