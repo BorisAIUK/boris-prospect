@@ -1183,21 +1183,36 @@ function loadGoogleMapsScript(apiKey) {
   });
 }
 
-function gmTextSearch(query) {
+function gmTextSearch(query, limit) {
+  const totalPages = limit <= 20 ? 1 : limit <= 40 ? 2 : 3;
   return new Promise((resolve) => {
     const div = document.createElement('div');
     document.body.appendChild(div);
     const map = new google.maps.Map(div, { center:{lat:54.97,lng:-1.61}, zoom:10 });
     const svc = new google.maps.places.PlacesService(map);
-    svc.textSearch({ query, region:'gb' }, (res, status) => {
-      document.body.removeChild(div);
+    let allResults = [];
+    let pageNum = 0;
+
+    function handlePage(res, status, pagination) {
+      pageNum++;
       if (status === 'OK') {
         costTracker.textSearches++;
         saveCostTracker();
         updateCostKPI();
+        allResults = allResults.concat(res || []);
       }
-      resolve(status === 'OK' ? (res||[]) : []);
-    });
+      const hasMore = pagination && pagination.hasNextPage;
+      if (status === 'OK' && hasMore && pageNum < totalPages) {
+        setProgress(8 + pageNum * 2, `Fetching page ${pageNum + 1} of ${totalPages}…`);
+        setTimeout(() => pagination.nextPage(), 2000);
+      } else {
+        document.body.removeChild(div);
+        resolve(allResults);
+      }
+    }
+
+    setProgress(8, `Fetching page 1 of ${totalPages}…`);
+    svc.textSearch({ query, region:'gb' }, handlePage);
   });
 }
 
@@ -1250,7 +1265,7 @@ async function runSearch() {
   // Step 1: Text search
   let places = [];
   try {
-    places = await gmTextSearch(`${sector} in ${location} UK`);
+    places = await gmTextSearch(`${sector} in ${location} UK`, limit);
     places = places.slice(0, limit);
   } catch(e) {
     toast('Search failed — make sure Places API is enabled in Google Cloud', 'error');
