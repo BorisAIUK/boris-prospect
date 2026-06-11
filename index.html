@@ -1183,41 +1183,55 @@ function loadGoogleMapsScript(apiKey) {
   });
 }
 
-function gmTextSearch(query, limit) {
-  const totalPages = limit <= 20 ? 1 : limit <= 40 ? 2 : 3;
-  console.log(`[gmTextSearch] query="${query}" limit=${limit} totalPages=${totalPages}`);
-  return new Promise((resolve) => {
-    const div = document.createElement('div');
-    document.body.appendChild(div);
-    const map = new google.maps.Map(div, { center:{lat:54.97,lng:-1.61}, zoom:10 });
-    const svc = new google.maps.places.PlacesService(map);
-    let allResults = [];
-    let pageNum = 0;
+function getSectorVariations(sector) {
+  const s = sector.toLowerCase();
+  if (s.includes('solicitor'))    return [sector, 'lawyer',          'legal services'];
+  if (s.includes('estate agent')) return [sector, 'letting agent',   'property agent'];
+  if (s.includes('accountant'))   return [sector, 'accounting firm', 'bookkeeper'];
+  if (s.includes('dentist'))      return [sector, 'dental practice', 'dental clinic'];
+  if (s.includes('restaurant'))   return [sector, 'cafe',            'dining'];
+  return [sector, `${sector} firm`, `${sector} services`];
+}
 
-    function handlePage(res, status, pagination) {
-      pageNum++;
-      if (status === 'OK') {
-        costTracker.textSearches++;
-        saveCostTracker();
-        updateCostKPI();
-        allResults = allResults.concat(res || []);
-      }
-      const hasMore = !!(pagination && pagination.hasNextPage);
-      console.log(`[gmTextSearch] Page ${pageNum} complete — status: ${status}, results this page: ${(res||[]).length}, total so far: ${allResults.length}, hasNextPage: ${hasMore}`);
-      if (status === 'OK' && hasMore && pageNum < totalPages) {
-        console.log(`[gmTextSearch] Requesting page ${pageNum + 1} of ${totalPages} (waiting 2500ms)…`);
-        setProgress(8 + pageNum * 2, `Fetching page ${pageNum + 1} of ${totalPages}…`);
-        setTimeout(() => pagination.nextPage(), 2500);
-      } else {
-        console.log(`[gmTextSearch] Done. Total results: ${allResults.length}${!hasMore && pageNum < totalPages ? ' (no further pages available from API)' : ''}`);
+async function gmTextSearch(sector, location, limit) {
+  const totalSearches = limit <= 20 ? 1 : limit <= 40 ? 2 : 3;
+  const variants = getSectorVariations(sector).slice(0, totalSearches);
+  console.log(`[gmTextSearch] sector="${sector}" location="${location}" limit=${limit} totalSearches=${totalSearches}`, variants);
+
+  function runSingleSearch(query, searchNum) {
+    return new Promise((resolve) => {
+      const div = document.createElement('div');
+      document.body.appendChild(div);
+      const map = new google.maps.Map(div, { center:{lat:54.97,lng:-1.61}, zoom:10 });
+      const svc = new google.maps.places.PlacesService(map);
+      setProgress(8 + (searchNum - 1) * 2, `Search ${searchNum} of ${totalSearches}: "${query}"…`);
+      svc.textSearch({ query, region:'gb' }, (res, status) => {
         document.body.removeChild(div);
-        resolve(allResults);
+        if (status === 'OK') {
+          costTracker.textSearches++;
+          saveCostTracker();
+          updateCostKPI();
+        }
+        console.log(`[gmTextSearch] Search ${searchNum} ("${query}") — status: ${status}, results: ${(res||[]).length}`);
+        resolve(status === 'OK' ? (res || []) : []);
+      });
+    });
+  }
+
+  const seen = new Set();
+  const allResults = [];
+  for (let i = 0; i < variants.length; i++) {
+    const query = `${variants[i]} in ${location} UK`;
+    const results = await runSingleSearch(query, i + 1);
+    for (const r of results) {
+      if (!seen.has(r.place_id)) {
+        seen.add(r.place_id);
+        allResults.push(r);
       }
     }
-
-    setProgress(8, `Fetching page 1 of ${totalPages}…`);
-    svc.textSearch({ query, region:'gb' }, handlePage);
-  });
+  }
+  console.log(`[gmTextSearch] All searches done. Unique results: ${allResults.length}`);
+  return allResults;
 }
 
 function gmGetDetails(placeId) {
@@ -1263,13 +1277,12 @@ async function runSearch() {
     resetSearch(); return;
   }
 
-  setProgress(8, `Searching for "${sector}" in ${location}…`);
   document.getElementById('search-status').textContent = 'Searching…';
 
   // Step 1: Text search
   let places = [];
   try {
-    places = await gmTextSearch(`${sector} in ${location} UK`, limit);
+    places = await gmTextSearch(sector, location, limit);
     places = places.slice(0, limit);
   } catch(e) {
     toast('Search failed — make sure Places API is enabled in Google Cloud', 'error');
