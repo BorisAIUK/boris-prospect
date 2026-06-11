@@ -436,10 +436,12 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 .co-url a:hover { color: var(--cyan); }
 
 /* Contact info */
-.contact-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+.contact-cell { display: flex; flex-direction: column; gap: 0.2rem; max-width: 200px; overflow: hidden; }
 .contact-line { font-family: var(--mono); font-size: 0.65rem; color: var(--text3); }
 .contact-line a { color: var(--accent); text-decoration: none; }
 .contact-line a:hover { text-decoration: underline; }
+.url-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-wrap { overflow-x: auto; }
 
 /* Empty / loading states */
 .empty-state {
@@ -1515,7 +1517,8 @@ function renderTable() {
 
     // Contact
     const phone = r.phone ? `<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>` : '';
-    const web   = r.website ? `<div class="contact-line">🌐 <a href="https://${r.website}" target="_blank">${r.website}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
+    const displayUrl = r.website && r.website.length > 35 ? r.website.slice(0, 35) + '…' : r.website;
+    const web   = r.website ? `<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${displayUrl}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
     const li    = r.name ? `<div class="contact-line">🔗 <a href="https://linkedin.com/company/${encodeURIComponent(r.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))}" target="_blank">LinkedIn</a></div>` : '';
 
     // Stage select
@@ -1567,7 +1570,7 @@ function renderTable() {
   }).join('');
 
   document.getElementById('table-area').innerHTML = `
-    <table>
+    <div class="table-wrap"><table>
       <thead>
         <tr>
           <th style="width:36px">#</th>
@@ -1582,7 +1585,7 @@ function renderTable() {
         </tr>
       </thead>
       <tbody>${trs}</tbody>
-    </table>`;
+    </table></div>`;
 }
 
 function setStage(i, val) {
@@ -1813,7 +1816,7 @@ function renderHistory() {
       </td>
       <td>
         <div class="contact-cell">
-          ${r.website?`<div class="contact-line">🌐 <a href="https://${r.website}" target="_blank">${r.website}</a></div>`:''}
+          ${r.website?`<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${r.website.length>35?r.website.slice(0,35)+'…':r.website}</a></div>`:''}
           ${r.phone?`<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>`:''}
         </div>
       </td>
@@ -1825,14 +1828,14 @@ function renderHistory() {
   }).join('');
 
   document.getElementById('history-table-area').innerHTML = `
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr>
         <th style="width:36px">#</th><th style="width:38px">Score</th>
         <th>Company</th><th>Contact</th><th>Chat Status</th>
         <th>Platform</th><th style="width:120px">Find Contact</th><th style="width:110px">HubSpot</th>
       </tr></thead>
       <tbody>${trs}</tbody>
-    </table>`;
+    </table></div>`;
 }
 
 async function pushToHubSpotHistory(i) {
