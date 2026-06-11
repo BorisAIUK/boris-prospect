@@ -1248,9 +1248,11 @@ function gmGetDetails(placeId) {
 }
 
 async function runSearch() {
+  console.log('[runSearch] called');
   const sector   = document.getElementById('inp-sector').value.trim();
   const location = document.getElementById('inp-location').value.trim();
   const limit    = parseInt(document.getElementById('inp-limit').value);
+  console.log('[runSearch] sector:', sector, 'location:', location, 'limit:', limit);
   const apiKey   = getGoogleKey();
 
   if (!sector || !location) return toast('Enter a sector and location first', 'error');
