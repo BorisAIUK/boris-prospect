@@ -1196,7 +1196,7 @@ function getSectorVariations(sector) {
 async function gmTextSearch(sector, location, limit) {
   const totalSearches = limit <= 20 ? 1 : limit <= 40 ? 2 : 3;
   const variants = getSectorVariations(sector).slice(0, totalSearches);
-  console.log(`[gmTextSearch] sector="${sector}" location="${location}" limit=${limit} totalSearches=${totalSearches}`, variants);
+  console.log('[gmTextSearch] called with sector:', sector, 'location:', location, 'limit:', limit, 'variants:', getSectorVariations(sector));
 
   function runSingleSearch(query, searchNum) {
     return new Promise((resolve) => {
@@ -1212,7 +1212,7 @@ async function gmTextSearch(sector, location, limit) {
           saveCostTracker();
           updateCostKPI();
         }
-        console.log(`[gmTextSearch] Search ${searchNum} ("${query}") — status: ${status}, results: ${(res||[]).length}`);
+        console.log(`[gmTextSearch] search ${searchNum} returned ${(res||[]).length} results (status: ${status}, query: "${query}")`);
         resolve(status === 'OK' ? (res || []) : []);
       });
     });
@@ -1230,7 +1230,7 @@ async function gmTextSearch(sector, location, limit) {
       }
     }
   }
-  console.log(`[gmTextSearch] All searches done. Unique results: ${allResults.length}`);
+  console.log('[gmTextSearch] total after dedup:', allResults.length);
   return allResults;
 }
 
