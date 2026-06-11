@@ -1185,6 +1185,7 @@ function loadGoogleMapsScript(apiKey) {
 
 function gmTextSearch(query, limit) {
   const totalPages = limit <= 20 ? 1 : limit <= 40 ? 2 : 3;
+  console.log(`[gmTextSearch] query="${query}" limit=${limit} totalPages=${totalPages}`);
   return new Promise((resolve) => {
     const div = document.createElement('div');
     document.body.appendChild(div);
@@ -1201,11 +1202,14 @@ function gmTextSearch(query, limit) {
         updateCostKPI();
         allResults = allResults.concat(res || []);
       }
-      const hasMore = pagination && pagination.hasNextPage;
+      const hasMore = !!(pagination && pagination.hasNextPage);
+      console.log(`[gmTextSearch] Page ${pageNum} complete — status: ${status}, results this page: ${(res||[]).length}, total so far: ${allResults.length}, hasNextPage: ${hasMore}`);
       if (status === 'OK' && hasMore && pageNum < totalPages) {
+        console.log(`[gmTextSearch] Requesting page ${pageNum + 1} of ${totalPages} (waiting 2500ms)…`);
         setProgress(8 + pageNum * 2, `Fetching page ${pageNum + 1} of ${totalPages}…`);
-        setTimeout(() => pagination.nextPage(), 2000);
+        setTimeout(() => pagination.nextPage(), 2500);
       } else {
+        console.log(`[gmTextSearch] Done. Total results: ${allResults.length}${!hasMore && pageNum < totalPages ? ' (no further pages available from API)' : ''}`);
         document.body.removeChild(div);
         resolve(allResults);
       }
