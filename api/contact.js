@@ -56,14 +56,24 @@ module.exports = async (req, res) => {
         method: 'POST', headers,
         body: JSON.stringify({
           filterGroups: [{ filters: [{ propertyName: 'domain', operator: 'EQ', value: domain }] }],
-          properties: ['domain', 'name'],
+          properties: ['domain', 'name', 'chatbot_presence'],
         }),
       });
       const searchBody = await searchRes.json();
       console.log('contact.js: company search result:', searchBody.total, 'results found');
 
       if (searchRes.ok && searchBody.total > 0) {
-        const companyId = searchBody.results[0].id;
+        const companyId      = searchBody.results[0].id;
+        const companyChatbot = searchBody.results[0].properties.chatbot_presence || '';
+        console.log('contact.js: company chatbot_presence:', companyChatbot);
+
+        // Patch contact to sync chatbot_presence_co from company record
+        const patchRes = await fetch(`${BASE}/crm/v3/objects/contacts/${contactId}`, {
+          method: 'PATCH', headers,
+          body: JSON.stringify({ properties: { chatbot_presence_co: companyChatbot } }),
+        });
+        console.log('contact.js: contact patch HTTP status:', patchRes.status);
+
         console.log('contact.js: linking contact', contactId, 'to company', companyId);
         const assocRes  = await fetch(
           `${BASE}/crm/v4/objects/contacts/${contactId}/associations/companies/${companyId}/labels`,

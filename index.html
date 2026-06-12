@@ -1933,7 +1933,7 @@ async function submitContact() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: hsKey,
-        contactProperties: { firstname, lastname, email, jobtitle },
+        contactProperties: { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) },
         companyDomain: _contactDomain,
       }),
     });
