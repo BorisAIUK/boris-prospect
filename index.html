@@ -1934,7 +1934,7 @@ async function submitContact() {
   btn.textContent = 'Pushing…';
 
   const contactProperties = { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) };
-  if (linkedinUrl) contactProperties.linkedin_url = linkedinUrl;
+  if (linkedinUrl) contactProperties.hs_linkedin_url = linkedinUrl;
 
   try {
     const resp = await fetch('/api/contact', {
