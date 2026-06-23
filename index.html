@@ -834,6 +834,10 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
       <label>Job Title</label>
       <input class="modal-input" id="c-jobtitle" value="Marketing Manager" autocomplete="off">
     </div>
+    <div class="modal-field">
+      <label>LinkedIn URL</label>
+      <input class="modal-input" id="modal-linkedin" placeholder="https://www.linkedin.com/in/..." autocomplete="off">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeContactModal()">Cancel</button>
       <button class="btn btn-primary btn-sm" id="contact-submit-btn" onclick="submitContact()">Push to HubSpot</button>
@@ -1904,6 +1908,7 @@ function openContactModal(idx, source) {
   document.getElementById('c-lastname').value   = '';
   document.getElementById('c-email').value      = '';
   document.getElementById('c-jobtitle').value   = 'Marketing Manager';
+  document.getElementById('modal-linkedin').value = '';
   document.getElementById('contact-modal').classList.add('open');
   document.getElementById('c-firstname').focus();
 }
@@ -1916,10 +1921,11 @@ async function submitContact() {
   const hsKey = getHsKey();
   if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
 
-  const firstname = document.getElementById('c-firstname').value.trim();
-  const lastname  = document.getElementById('c-lastname').value.trim();
-  const email     = document.getElementById('c-email').value.trim();
-  const jobtitle  = document.getElementById('c-jobtitle').value.trim();
+  const firstname    = document.getElementById('c-firstname').value.trim();
+  const lastname     = document.getElementById('c-lastname').value.trim();
+  const email        = document.getElementById('c-email').value.trim();
+  const jobtitle     = document.getElementById('c-jobtitle').value.trim();
+  const linkedinUrl  = document.getElementById('modal-linkedin').value.trim();
 
   if (!email) return toast('Email address is required', 'error');
 
@@ -1927,13 +1933,16 @@ async function submitContact() {
   btn.disabled = true;
   btn.textContent = 'Pushing…';
 
+  const contactProperties = { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) };
+  if (linkedinUrl) contactProperties.linkedin_url = linkedinUrl;
+
   try {
     const resp = await fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: hsKey,
-        contactProperties: { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) },
+        contactProperties,
         companyDomain: _contactDomain,
       }),
     });
