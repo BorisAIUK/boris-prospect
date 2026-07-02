@@ -879,9 +879,12 @@ const PLATFORMS = [
   { name:"Botpress",        tier:"basic", score:30, patterns:["cdn.botpress.cloud"] },
   { name:"Voiceflow",       tier:"basic", score:28, patterns:["voiceflow.com/widget"] },
   { name:"CustomGPT",       tier:"basic", score:32, patterns:["customgpt.ai","cgpt-","customgpt-","data-customgpt","customgpt_widget"] },
+  // Competitor — direct Boris rivals
+  { name:"Commcore.ai",     tier:"competitor", score:65, patterns:["commcoreai.com","commcore.ai","commcoreai"] },
+  { name:"ReceptIO",        tier:"competitor", score:65, patterns:["receptio.ai","receptio"] },
 ];
 
-const TIER_LABEL = { enterprise:'🔴 Enterprise', mid:'🔵 Competitor', basic:'🟡 Basic' };
+const TIER_LABEL = { enterprise:'🔴 Enterprise', mid:'🔵 Competitor', competitor:'🔵 Competitor', basic:'🟡 Basic' };
 const STAGES = ['Not Contacted','Researching','Email Sent','Call Made','Meeting Booked','Proposal Sent','Won','Lost'];
 
 // ════════════════════════════════════════════════════
@@ -1466,7 +1469,7 @@ function updateKPIs() {
   const done = results.filter(r=>r.chatStatus!=='pending');
   const none  = done.filter(r=>r.chatStatus==='none').length;
   const basic = done.filter(r=>r.chatStatus==='competitor' && r.tier==='basic').length;
-  const comp  = done.filter(r=>r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise')).length;
+  const comp  = done.filter(r=>r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'||r.tier==='competitor')).length;
   const hot   = done.filter(r=>r.score>=70).length;
   const hs    = results.filter(r=>r.pushedToHS).length;
 
@@ -1505,7 +1508,7 @@ function renderTable() {
     // Filter
     if (activeFilter === 'none'       && r.chatStatus !== 'none') return false;
     if (activeFilter === 'basic'      && !(r.chatStatus==='competitor' && r.tier==='basic')) return false;
-    if (activeFilter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'))) return false;
+    if (activeFilter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'||r.tier==='competitor'))) return false;
     if (activeFilter === 'hot'        && r.score < 70) return false;
     if (activeFilter === 'blocked'    && r.chatStatus !== 'blocked') return false;
     // Search
@@ -1547,7 +1550,7 @@ function renderTable() {
     else if (r.chatStatus === 'none')   chatBadge = `<span class="badge b-none">🟢 No Chatbot</span>`;
     else if (r.chatStatus === 'blocked')chatBadge = `<span class="badge b-blocked">⬜ Blocked</span>`;
     else if (r.tier === 'basic')        chatBadge = `<span class="badge b-basic">🟡 Basic Chat</span>`;
-    else if (r.tier === 'mid')          chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
+    else if (r.tier === 'mid' || r.tier === 'competitor') chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
     else if (r.tier === 'enterprise')   chatBadge = `<span class="badge b-ent">🔴 Enterprise</span>`;
 
     // Platforms
@@ -1582,7 +1585,7 @@ function renderTable() {
     let pitch = '';
     if (r.chatStatus === 'none') pitch = `<div style="font-size:0.65rem;color:var(--green);margin-top:0.2rem">No chatbot — greenfield opportunity</div>`;
     else if (r.tier === 'basic') pitch = `<div style="font-size:0.65rem;color:var(--amber);margin-top:0.2rem">Basic tool — easy upgrade sell</div>`;
-    else if (r.tier === 'mid' || r.tier === 'enterprise') pitch = `<div style="font-size:0.65rem;color:var(--accent);margin-top:0.2rem">Competitor — switch pitch</div>`;
+    else if (r.tier === 'mid' || r.tier === 'enterprise' || r.tier === 'competitor') pitch = `<div style="font-size:0.65rem;color:var(--accent);margin-top:0.2rem">Competitor — switch pitch</div>`;
 
     return `<tr>
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
@@ -1679,7 +1682,7 @@ function getChatbotPresence(r) {
   if (r.chatStatus === 'none') return 'No chatbot';
   if (r.chatStatus === 'blocked') return 'Blocked';
   if (r.chatStatus === 'competitor' && r.tier === 'basic') return 'Basic Chat';
-  if (r.chatStatus === 'competitor' && (r.tier === 'mid' || r.tier === 'enterprise')) return 'Competitor';
+  if (r.chatStatus === 'competitor' && (r.tier === 'mid' || r.tier === 'enterprise' || r.tier === 'competitor')) return 'Competitor';
   return '';
 }
 
@@ -1794,7 +1797,7 @@ function renderHistory() {
     if (filter !== 'all') {
       if (filter === 'none' && r.chatStatus !== 'none') return false;
       if (filter === 'basic' && !(r.chatStatus==='competitor' && r.tier==='basic')) return false;
-      if (filter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'))) return false;
+      if (filter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'||r.tier==='competitor'))) return false;
       if (filter === 'blocked' && r.chatStatus !== 'blocked') return false;
     }
     if (search && !r.name.toLowerCase().includes(search) && !(r.website||'').toLowerCase().includes(search) && !(r.searchLabel||'').toLowerCase().includes(search)) return false;
@@ -1805,7 +1808,7 @@ function renderHistory() {
   document.getElementById('hk-total').textContent    = history_.length || '—';
   document.getElementById('hk-none').textContent     = history_.filter(r=>r.chatStatus==='none').length || '—';
   document.getElementById('hk-basic').textContent    = history_.filter(r=>r.chatStatus==='competitor'&&r.tier==='basic').length || '—';
-  document.getElementById('hk-comp').textContent     = history_.filter(r=>r.chatStatus==='competitor'&&(r.tier==='mid'||r.tier==='enterprise')).length || '—';
+  document.getElementById('hk-comp').textContent     = history_.filter(r=>r.chatStatus==='competitor'&&(r.tier==='mid'||r.tier==='enterprise'||r.tier==='competitor')).length || '—';
   document.getElementById('hk-searches').textContent = sessions.length || '—';
   document.getElementById('hk-hs').textContent       = history_.filter(r=>r.pushedToHS).length || '—';
   document.getElementById('history-count').textContent = `${rows.length} of ${history_.length}`;
@@ -1828,7 +1831,7 @@ function renderHistory() {
     if (r.chatStatus==='none')     chatBadge = `<span class="badge b-none">🟢 No Chatbot</span>`;
     else if (r.chatStatus==='blocked') chatBadge = `<span class="badge b-blocked">⬜ Blocked</span>`;
     else if (r.tier==='basic')     chatBadge = `<span class="badge b-basic">🟡 Basic Chat</span>`;
-    else if (r.tier==='mid')       chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
+    else if (r.tier==='mid'||r.tier==='competitor') chatBadge = `<span class="badge b-mid">🔵 Competitor</span>`;
     else if (r.tier==='enterprise')chatBadge = `<span class="badge b-ent">🔴 Enterprise</span>`;
     else                           chatBadge = `<span class="badge b-scan">● Scanning</span>`;
     const hsBtn = r.pushedToHS
@@ -1978,7 +1981,7 @@ function exportHistory() {
   const headers = ['#','Company','Website','Phone','Address','Chat Status','Platforms','Score','Search','Date','Stage','In HubSpot'];
   const rows = [headers, ...history_.map((r,i) => [
     i+1, r.name, r.website||'', r.phone||'', r.address||'',
-    r.chatStatus==='none'?'No Chatbot':r.chatStatus==='blocked'?'Blocked':`${r.tier||''} competitor`,
+    r.chatStatus==='none'?'No Chatbot':r.chatStatus==='blocked'?'Blocked':getChatbotPresence(r)||`${r.tier||''} competitor`,
     (r.platforms||[]).join('; '), r.score||'',
     r.searchLabel||'', r.searchDate||'', r.stage||'', r.pushedToHS?'Yes':'No'
   ])];
