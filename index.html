@@ -1419,16 +1419,17 @@ async function detectChat(domain) {
     }
   }
 
-  // Extract Facebook page URL
+  // Extract Facebook page URL — always normalise to https://www.facebook.com/
   let facebookUrl = null;
-  const fbRegex = /(?:href|src)=["']([^"']*facebook\.com\/[^"'?#\s]+)/gi;
+  const fbRegex = /(?:href|src)=["']([^"']*(?:facebook\.com|fb\.com)\/[^"'?#\s]+)/gi;
   let fbMatch;
   while ((fbMatch = fbRegex.exec(html)) !== null) {
     const raw = fbMatch[1].split('?')[0].replace(/\/$/, '');
-    const pathPart = raw.replace(/^https?:\/\/(?:www\.)?facebook\.com\//, '');
+    const pathPart = raw.replace(/^https?:\/\/(?:(?:www|m|web)\.)?facebook\.com\//, '')
+                        .replace(/^https?:\/\/fb\.com\//, '');
     if (/^(?:sharer|share|login|plugins|dialog|tr|l\.php)/i.test(pathPart)) continue;
-    if (pathPart && pathPart.length > 1) {
-      facebookUrl = raw.startsWith('http') ? raw : 'https://www.facebook.com/' + pathPart;
+    if (pathPart && pathPart.length > 1 && !pathPart.startsWith('http')) {
+      facebookUrl = 'https://www.facebook.com/' + pathPart;
       break;
     }
   }
@@ -1682,7 +1683,9 @@ async function pushToHubSpot(i) {
     description: buildHsDescription(r),
     chatbot_presence: getChatbotPresence(r),
   };
-  if (r.instagramUrl) props.instagram_page = r.instagramUrl;
+  if (r.facebookUrl)  props.facebook_company_page = r.facebookUrl;
+  if (r.instagramUrl) props.instagram_page        = r.instagramUrl;
+  console.log('[pushToHubSpot] props keys:', Object.keys(props), '| facebook_company_page:', props.facebook_company_page || '(none)');
 
   try {
     const res = await fetch('/api/hubspot', {
@@ -1920,10 +1923,12 @@ async function pushToHubSpotHistory(i) {
   const hsKey = getHsKey();
   if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
   try {
+    const _hProps = { name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r), ...(r.facebookUrl ? { facebook_company_page: r.facebookUrl } : {}), ...(r.instagramUrl ? { instagram_page: r.instagramUrl } : {}) };
+    console.log('[pushToHubSpotHistory] props keys:', Object.keys(_hProps), '| facebook_company_page:', _hProps.facebook_company_page || '(none)');
     const res = await fetch('/api/hubspot', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token:hsKey, properties:{ name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r), ...(r.instagramUrl ? { instagram_page: r.instagramUrl } : {}) } }),
+      body: JSON.stringify({ token:hsKey, properties:{ name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r), ...(r.facebookUrl ? { facebook_company_page: r.facebookUrl } : {}), ...(r.instagramUrl ? { instagram_page: r.instagramUrl } : {}) } }),
     });
     if (res.ok) { history_[i].pushedToHS=true; renderHistory(); saveToStorage(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }

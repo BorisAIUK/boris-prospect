@@ -27,6 +27,7 @@ module.exports = async (req, res) => {
   if (!domain) return res.status(400).json({ message: 'Could not extract a domain from properties' });
 
   const cleanProps = { ...properties, domain };
+  console.log('[hubspot] cleanProps keys:', Object.keys(cleanProps), '| facebook_company_page:', cleanProps.facebook_company_page || '(none)');
 
   const headers = {
     'Content-Type': 'application/json',
