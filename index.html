@@ -1973,8 +1973,6 @@ async function submitContact() {
 
   const contactProperties = { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) };
   if (linkedinUrl) contactProperties.hs_linkedin_url = linkedinUrl;
-  if (_contactRecord && _contactRecord.facebookUrl)   contactProperties.facebook_company_page = _contactRecord.facebookUrl;
-  if (_contactRecord && _contactRecord.instagramUrl)  contactProperties.instagram_page         = _contactRecord.instagramUrl;
 
   try {
     const resp = await fetch('/api/contact', {
