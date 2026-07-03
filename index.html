@@ -1409,7 +1409,7 @@ async function detectChat(domain) {
   console.log(`[detectChat] ${domain} — html.length: ${html.length}`);
   if (html.length > 0) console.log(`[detectChat] ${domain} — first 500 chars:`, html.slice(0, 500));
 
-  if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null };
+  if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null, facebookUrl:null, instagramUrl:null };
 
   const lower = html.toLowerCase();
   const found = [];
@@ -1672,6 +1672,7 @@ function setStage(i, val) {
 // ════════════════════════════════════════════════════
 async function pushToHubSpot(i) {
   const r = results[i];
+  console.log('[pushToHubSpot] called, facebookUrl:', r.facebookUrl, 'instagramUrl:', r.instagramUrl);
   const hsKey = getHsKey();
   if (!hsKey) return toast('Add your HubSpot token in Setup first', 'error');
 
