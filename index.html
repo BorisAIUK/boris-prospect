@@ -1352,11 +1352,12 @@ async function runSearch() {
     document.getElementById('search-status').textContent = `Scanning ${i+1}/${results.length}: ${r.name}`;
 
     const detection = await detectChat(r.website);
-    r.chatStatus  = detection.status;
-    r.platforms   = detection.platforms;
-    r.tier        = detection.tier;
-    r.facebookUrl = detection.facebookUrl;
-    r.score       = calcScore(detection, r.website, r.name);
+    r.chatStatus    = detection.status;
+    r.platforms     = detection.platforms;
+    r.tier          = detection.tier;
+    r.facebookUrl   = detection.facebookUrl;
+    r.instagramUrl  = detection.instagramUrl;
+    r.score         = calcScore(detection, r.website, r.name);
 
     updateKPIs(); renderTable();
     await sleep(300);
@@ -1432,13 +1433,27 @@ async function detectChat(domain) {
     }
   }
 
-  if (!found.length) return { status:'none', platforms:[], tier:'none', facebookUrl };
+  // Extract Instagram page URL
+  let instagramUrl = null;
+  const igRegex = /(?:href|src)=["']([^"']*instagram\.com\/[^"'?#\s]+)/gi;
+  let igMatch;
+  while ((igMatch = igRegex.exec(html)) !== null) {
+    const raw = igMatch[1].split('?')[0].replace(/\/$/, '');
+    const pathPart = raw.replace(/^https?:\/\/(?:www\.)?instagram\.com\//, '');
+    if (/^(?:p\/|reel\/|stories\/|explore\/)/i.test(pathPart)) continue;
+    if (pathPart && pathPart.length > 1) {
+      instagramUrl = raw.startsWith('http') ? raw : 'https://www.instagram.com/' + pathPart;
+      break;
+    }
+  }
+
+  if (!found.length) return { status:'none', platforms:[], tier:'none', facebookUrl, instagramUrl };
 
   // Determine highest tier
   const tiers = found.map(p=>p.tier);
   const tier = tiers.includes('enterprise') ? 'enterprise' : tiers.includes('mid') ? 'mid' : tiers.includes('competitor') ? 'competitor' : 'basic';
 
-  return { status:'competitor', platforms: found.map(p=>p.name), tier, facebookUrl };
+  return { status:'competitor', platforms: found.map(p=>p.name), tier, facebookUrl, instagramUrl };
 }
 
 // ════════════════════════════════════════════════════
@@ -1576,7 +1591,8 @@ function renderTable() {
     const displayUrl = r.website && r.website.length > 35 ? r.website.slice(0, 35) + '…' : r.website;
     const web   = r.website ? `<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${displayUrl}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
     const li    = r.name ? `<div class="contact-line">🔗 <a href="https://linkedin.com/company/${encodeURIComponent(r.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))}" target="_blank">LinkedIn</a></div>` : '';
-    const fb    = r.facebookUrl ? `<div class="contact-line">📘 <a href="${r.facebookUrl}" target="_blank">${r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, 'fb.com/')}</a></div>` : '';
+    const fb    = r.facebookUrl   ? `<div class="contact-line">📘 <a href="${r.facebookUrl}" target="_blank">${r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, 'fb.com/')}</a></div>` : '';
+    const ig    = r.instagramUrl ? `<div class="contact-line">📷 <a href="${r.instagramUrl}" target="_blank">${r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, 'instagram.com/')}</a></div>` : '';
 
     // Stage select
     const stageOpts = STAGES.map(s=>`<option value="${s}" ${r.stage===s?'selected':''}>${s}</option>`).join('');
@@ -1612,7 +1628,7 @@ function renderTable() {
         ${pitch}
       </td>
       <td>
-        <div class="contact-cell">${web}${phone}${li}${fb}</div>
+        <div class="contact-cell">${web}${phone}${li}${fb}${ig}</div>
       </td>
       <td>${chatBadge}</td>
       <td style="min-width:140px">${ptags || '<span style="color:var(--text3);font-size:0.72rem">—</span>'}</td>
@@ -1666,6 +1682,7 @@ async function pushToHubSpot(i) {
     description: buildHsDescription(r),
     chatbot_presence: getChatbotPresence(r),
   };
+  if (r.instagramUrl) props.instagram_page = r.instagramUrl;
 
   try {
     const res = await fetch('/api/hubspot', {
@@ -1770,7 +1787,7 @@ async function processUpload() {
     setProgress((i/results.length)*100, `Scanning ${r.name}…`);
     if (!r.website) { r.chatStatus='blocked'; r.score=5; updateKPIs(); renderTable(); continue; }
     const d = await detectChat(r.website);
-    r.chatStatus=d.status; r.platforms=d.platforms; r.tier=d.tier; r.facebookUrl=d.facebookUrl;
+    r.chatStatus=d.status; r.platforms=d.platforms; r.tier=d.tier; r.facebookUrl=d.facebookUrl; r.instagramUrl=d.instagramUrl;
     r.score=calcScore(d, r.website, r.name);
     updateKPIs(); renderTable();
     await sleep(300);
@@ -1876,6 +1893,7 @@ function renderHistory() {
           ${r.website?`<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${r.website.length>35?r.website.slice(0,35)+'…':r.website}</a></div>`:''}
           ${r.phone?`<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>`:''}
           ${r.facebookUrl?`<div class="contact-line">📘 <a href="${r.facebookUrl}" target="_blank">${r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//,'fb.com/')}</a></div>`:''}
+          ${r.instagramUrl?`<div class="contact-line">📷 <a href="${r.instagramUrl}" target="_blank">${r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//,'instagram.com/')}</a></div>`:''}
         </div>
       </td>
       <td>${chatBadge}</td>
@@ -1905,7 +1923,7 @@ async function pushToHubSpotHistory(i) {
     const res = await fetch('/api/hubspot', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token:hsKey, properties:{ name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r) } }),
+      body: JSON.stringify({ token:hsKey, properties:{ name:r.name, domain:extractDomain(r.website), website:r.website?'https://'+r.website:'', phone:r.phone||'', description:buildHsDescription(r), chatbot_presence:getChatbotPresence(r), ...(r.instagramUrl ? { instagram_page: r.instagramUrl } : {}) } }),
     });
     if (res.ok) { history_[i].pushedToHS=true; renderHistory(); saveToStorage(); const verb=res.status===200?'Updated in HubSpot':'Added to HubSpot'; toast(`${r.name} — ${verb} ✓`,'success'); }
     else { const err=await res.json(); toast(`HubSpot error: ${err.message||res.status}`,'error'); }
@@ -1955,7 +1973,8 @@ async function submitContact() {
 
   const contactProperties = { firstname, lastname, email, jobtitle, chatbot_presence_co: getChatbotPresence(_contactRecord) };
   if (linkedinUrl) contactProperties.hs_linkedin_url = linkedinUrl;
-  if (_contactRecord && _contactRecord.facebookUrl) contactProperties.facebook_company_page = _contactRecord.facebookUrl;
+  if (_contactRecord && _contactRecord.facebookUrl)   contactProperties.facebook_company_page = _contactRecord.facebookUrl;
+  if (_contactRecord && _contactRecord.instagramUrl)  contactProperties.instagram_page         = _contactRecord.instagramUrl;
 
   try {
     const resp = await fetch('/api/contact', {
@@ -1996,12 +2015,12 @@ function clearHistory() {
 
 function exportHistory() {
   if (!history_.length) return toast('No history to export yet', 'error');
-  const headers = ['#','Company','Website','Phone','Address','Chat Status','Platforms','Score','Search','Date','Stage','In HubSpot','Facebook'];
+  const headers = ['#','Company','Website','Phone','Address','Chat Status','Platforms','Score','Search','Date','Stage','In HubSpot','Facebook','Instagram'];
   const rows = [headers, ...history_.map((r,i) => [
     i+1, r.name, r.website||'', r.phone||'', r.address||'',
     r.chatStatus==='none'?'No Chatbot':r.chatStatus==='blocked'?'Blocked':getChatbotPresence(r)||`${r.tier||''} competitor`,
     (r.platforms||[]).join('; '), r.score||'',
-    r.searchLabel||'', r.searchDate||'', r.stage||'', r.pushedToHS?'Yes':'No', r.facebookUrl||''
+    r.searchLabel||'', r.searchDate||'', r.stage||'', r.pushedToHS?'Yes':'No', r.facebookUrl||'', r.instagramUrl||''
   ])];
   const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
