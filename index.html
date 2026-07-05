@@ -2333,7 +2333,7 @@ async function pushCompanyAndContacts() {
   }
 
   if (pushed > 0 || selected.length === 0) r.contactAdded = true;
-  saveToStorage(); renderTable(); renderHistory();
+  updateKPIs(); saveToStorage(); renderTable(); renderHistory();
   closeHunterModal();
 
   if (selected.length === 0) {
