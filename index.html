@@ -902,15 +902,17 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
   <div class="modal-box" style="max-width:500px;width:100%">
     <div class="modal-title">Contacts found at <span id="hunter-modal-company" style="color:var(--cyan)"></span></div>
     <div class="modal-sub" id="hunter-modal-sub"></div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;line-height:1.5">Review contacts, then push company and selected contacts to HubSpot in one click.</div>
     <div id="hunter-loading" style="text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">Searching Hunter.io…</div>
     <div id="hunter-empty" style="display:none;text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">No contacts found on Hunter.io for this domain</div>
     <div id="hunter-contacts-wrap" style="display:none">
       <div class="hunter-contacts-scroll" id="hunter-contacts-list"></div>
       <button class="hunter-show-all-btn" id="hunter-show-all-btn" style="display:none" onclick="toggleHunterShowAll()">▾ Show all contacts</button>
     </div>
-    <div class="modal-actions">
+    <div class="modal-actions" style="flex-wrap:wrap;gap:0.5rem">
       <button class="btn btn-ghost btn-sm" onclick="closeHunterModal()">Cancel</button>
-      <button class="btn btn-primary btn-sm" id="hunter-push-btn" disabled onclick="pushSelectedContacts()">Push Selected to HubSpot</button>
+      <button class="btn btn-outline btn-sm" id="hunter-push-btn" disabled onclick="pushSelectedContacts()" title="Use this if the company is already in HubSpot">Push Contacts Only</button>
+      <button class="btn btn-primary btn-sm" id="hunter-push-all-btn" onclick="pushCompanyAndContacts()">Push Company to HubSpot</button>
     </div>
   </div>
 </div>
@@ -2156,7 +2158,9 @@ async function openHunterModal(idx, source) {
   document.getElementById('hunter-empty').style.display          = 'none';
   document.getElementById('hunter-contacts-wrap').style.display  = 'none';
   document.getElementById('hunter-push-btn').disabled            = true;
-  document.getElementById('hunter-push-btn').textContent         = 'Push Selected to HubSpot';
+  document.getElementById('hunter-push-btn').textContent         = 'Push Contacts Only';
+  document.getElementById('hunter-push-all-btn').disabled        = false;
+  document.getElementById('hunter-push-all-btn').textContent     = 'Push Company to HubSpot';
   document.getElementById('hunter-modal').classList.add('open');
 
   const domain = extractDomain(r.website);
@@ -2248,10 +2252,99 @@ function toggleHunterShowAll() {
 }
 
 function updateHunterPushBtn() {
-  const n   = document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked').length;
-  const btn = document.getElementById('hunter-push-btn');
-  btn.disabled    = n === 0;
-  btn.textContent = n > 0 ? `Push ${n} Contact${n > 1 ? 's' : ''} to HubSpot` : 'Push Selected to HubSpot';
+  const n       = document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked').length;
+  const btnOnly = document.getElementById('hunter-push-btn');
+  const btnAll  = document.getElementById('hunter-push-all-btn');
+
+  btnOnly.disabled    = n === 0;
+  btnOnly.textContent = n > 0 ? `Push ${n} Contact${n > 1 ? 's' : ''} Only` : 'Push Contacts Only';
+
+  if (btnAll && !btnAll.disabled) {
+    btnAll.textContent = n > 0
+      ? `Push Company + ${n} Contact${n > 1 ? 's' : ''} to HubSpot`
+      : 'Push Company to HubSpot';
+  }
+}
+
+async function pushCompanyAndContacts() {
+  const hsKey = getHsKey();
+  if (!hsKey) { toast('Add your HubSpot token in Setup first', 'error'); return; }
+
+  const r         = _hunterRecord;
+  const btnAll    = document.getElementById('hunter-push-all-btn');
+  const btnOnly   = document.getElementById('hunter-push-btn');
+  btnAll.disabled = true;
+  btnOnly.disabled = true;
+
+  // Step 1 — push company
+  btnAll.textContent = 'Pushing company…';
+  const props = {
+    name: r.name,
+    domain: extractDomain(r.website),
+    website: r.website ? 'https://' + r.website : '',
+    phone: r.phone || '',
+    description: buildHsDescription(r),
+    chatbot_presence: getChatbotPresence(r),
+  };
+  if (r.facebookUrl)  props.facebook_company_page = r.facebookUrl;
+  if (r.instagramUrl) props.instagram_page        = r.instagramUrl;
+
+  try {
+    const compRes = await fetch('/api/hubspot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: hsKey, properties: props }),
+    });
+    if (!compRes.ok) {
+      const err = await compRes.json();
+      toast(`HubSpot error: ${err.message || compRes.status}`, 'error');
+      btnAll.disabled = false; btnOnly.disabled = false; updateHunterPushBtn(); return;
+    }
+    r.pushedToHS = true;
+  } catch(e) {
+    toast('Failed to push company to HubSpot', 'error');
+    btnAll.disabled = false; btnOnly.disabled = false; updateHunterPushBtn(); return;
+  }
+
+  // Step 2 — push selected contacts
+  const checkboxes    = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
+  const selected      = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(Boolean);
+  const companyDomain = extractDomain(r.website);
+  const chatPresence  = getChatbotPresence(r);
+  let pushed = 0, errors = 0;
+
+  for (let i = 0; i < selected.length; i++) {
+    const c = selected[i];
+    btnAll.textContent = `Pushing contact ${i + 1} of ${selected.length}…`;
+    const contactProperties = {
+      firstname: c.firstName, lastname: c.lastName,
+      email: c.email, jobtitle: c.jobTitle,
+      chatbot_presence_co: chatPresence,
+    };
+    if (c.linkedinUrl) contactProperties.hs_linkedin_url = c.linkedinUrl;
+    try {
+      const resp = await fetch('/api/contact', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: hsKey, contactProperties, companyDomain }),
+      });
+      const data = await resp.json();
+      if (data.error) errors++; else pushed++;
+    } catch(e) { errors++; }
+  }
+
+  if (pushed > 0 || selected.length === 0) r.contactAdded = true;
+  saveToStorage(); renderTable(); renderHistory();
+  closeHunterModal();
+
+  if (selected.length === 0) {
+    toast(`${r.name} — added to HubSpot ✓`, 'success');
+  } else if (errors === 0) {
+    toast(`Company + ${pushed} contact${pushed > 1 ? 's' : ''} added to HubSpot ✓`, 'success');
+  } else if (pushed > 0) {
+    toast(`Company added, ${pushed} contacts pushed, ${errors} failed`, 'error');
+  } else {
+    toast(`Company added to HubSpot — contacts failed`, 'error');
+  }
 }
 
 async function pushSelectedContacts() {
