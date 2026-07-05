@@ -419,6 +419,37 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 }
 .hunter-btn:hover { background: rgba(168,85,247,0.22); }
 
+/* Hunter ⚡ Find Contacts button */
+.hunter-find-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--sans); font-size: 0.7rem; font-weight: 600;
+  padding: 0.28rem 0.65rem; border-radius: 6px; border: 1px solid rgba(6,182,212,0.3);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  background: rgba(6,182,212,0.12); color: var(--cyan);
+}
+.hunter-find-btn:hover:not(:disabled) { background: rgba(6,182,212,0.22); }
+.hunter-find-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Email confidence dot */
+.conf-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.conf-dot-green { background: var(--green); }
+.conf-dot-amber { background: var(--amber); }
+.conf-dot-red   { background: var(--red); }
+
+/* Hunter contact list */
+.hunter-contacts-scroll { max-height: 320px; overflow-y: auto; margin: 0.5rem 0; }
+.hunter-contact-item {
+  display: flex; align-items: flex-start; gap: 0.65rem;
+  padding: 0.6rem 0.25rem; border-bottom: 1px solid var(--border);
+}
+.hunter-contact-item:last-child { border-bottom: none; }
+.hunter-contact-info { flex: 1; min-width: 0; }
+.hunter-contact-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.hunter-contact-jobtitle { font-size: 0.72rem; color: var(--text3); margin-top: 0.1rem; }
+.hunter-contact-email { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.25rem; font-family: var(--mono); font-size: 0.7rem; color: var(--text2); }
+.hunter-show-all-btn { background: none; border: none; color: var(--accent); font-size: 0.75rem; cursor: pointer; padding: 0.35rem 0; font-family: var(--sans); display: block; }
+.hunter-show-all-btn:hover { text-decoration: underline; }
+
 /* Stage select */
 .stage-sel {
   background: var(--surface2); border: 1px solid var(--border2);
@@ -695,7 +726,7 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 <div class="setup-page">
   <div class="setup-hero">
     <div class="setup-title">Get <em>Set Up</em></div>
-    <div class="setup-sub">Two API keys to connect — takes about 10 minutes. You only do this once. Keys are saved in your browser.</div>
+    <div class="setup-sub">Three API keys to connect — takes about 15 minutes. You only do this once. Keys are saved in your browser.</div>
   </div>
 
   <div class="setup-steps">
@@ -727,7 +758,7 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
     <!-- Step 2: HubSpot -->
     <div class="step-card" id="step2-card">
       <span class="check-icon">✅</span>
-      <div class="step-num">Step 2 of 2</div>
+      <div class="step-num">Step 2 of 3</div>
       <div class="step-title">HubSpot Private App Token</div>
       <div class="step-desc">This lets you push companies directly into HubSpot as contacts with one click — only when you choose to.</div>
       <div class="instructions">
@@ -746,6 +777,27 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
         <button class="btn btn-primary btn-sm" onclick="saveHsKey()">Save Token</button>
       </div>
       <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-top:0.5rem" id="hs-key-status"></div>
+    </div>
+
+    <!-- Step 3: Hunter.io -->
+    <div class="step-card" id="step3-card">
+      <span class="check-icon">✅</span>
+      <div class="step-num">Step 3 of 3</div>
+      <div class="step-title">Hunter.io API Key</div>
+      <div class="step-desc">Automatically finds verified email contacts at any company — powers the ⚡ Find Contacts button.</div>
+      <div class="instructions">
+        <ol>
+          <li>Go to <a href="https://hunter.io" target="_blank" style="color:var(--accent)">hunter.io</a> and create a free account</li>
+          <li>In your Hunter dashboard, click your account name (top right) → <strong>API</strong></li>
+          <li>Copy your API key</li>
+          <li>Paste it below — Hunter's free plan includes 25 searches/month</li>
+        </ol>
+      </div>
+      <div class="input-row">
+        <input class="api-input" id="inp-hunter-key" type="password" placeholder="paste your Hunter.io API key here">
+        <button class="btn btn-primary btn-sm" onclick="saveHunterKey()">Save Hunter Key</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text3);margin-top:0.5rem" id="hunter-key-status"></div>
     </div>
 
     <!-- Status -->
@@ -841,6 +893,24 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeContactModal()">Cancel</button>
       <button class="btn btn-primary btn-sm" id="contact-submit-btn" onclick="submitContact()">Push to HubSpot</button>
+    </div>
+  </div>
+</div>
+
+<!-- HUNTER MULTI-CONTACT MODAL -->
+<div class="modal-overlay" id="hunter-modal" onclick="if(event.target===this)closeHunterModal()">
+  <div class="modal-box" style="max-width:500px;width:100%">
+    <div class="modal-title">Contacts found at <span id="hunter-modal-company" style="color:var(--cyan)"></span></div>
+    <div class="modal-sub" id="hunter-modal-sub"></div>
+    <div id="hunter-loading" style="text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">Searching Hunter.io…</div>
+    <div id="hunter-empty" style="display:none;text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">No contacts found on Hunter.io for this domain</div>
+    <div id="hunter-contacts-wrap" style="display:none">
+      <div class="hunter-contacts-scroll" id="hunter-contacts-list"></div>
+      <button class="hunter-show-all-btn" id="hunter-show-all-btn" style="display:none" onclick="toggleHunterShowAll()">▾ Show all contacts</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeHunterModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="hunter-push-btn" disabled onclick="pushSelectedContacts()">Push Selected to HubSpot</button>
     </div>
   </div>
 </div>
@@ -1107,13 +1177,15 @@ function renderTabs() {
 // ════════════════════════════════════════════════════
 // API KEY MANAGEMENT
 // ════════════════════════════════════════════════════
-function getGoogleKey() { return localStorage.getItem('boris_google_key') || ''; }
-function getHsKey()     { return localStorage.getItem('boris_hs_key') || ''; }
+function getGoogleKey()  { return localStorage.getItem('boris_google_key')  || ''; }
+function getHsKey()      { return localStorage.getItem('boris_hs_key')       || ''; }
+function getHunterKey()  { return localStorage.getItem('boris_hunter_key')   || ''; }
 
 function loadKeys() {
-  const gk = getGoogleKey(), hk = getHsKey();
-  if (gk) { document.getElementById('inp-google-key').value = gk; markStepDone('step1-card', 'google-key-status', '✓ Google Places key loaded'); }
-  if (hk) { document.getElementById('inp-hs-key').value = hk; markStepDone('step2-card', 'hs-key-status', '✓ HubSpot token loaded'); }
+  const gk = getGoogleKey(), hk = getHsKey(), hnk = getHunterKey();
+  if (gk)  { document.getElementById('inp-google-key').value  = gk;  markStepDone('step1-card',  'google-key-status',  '✓ Google Places key loaded'); }
+  if (hk)  { document.getElementById('inp-hs-key').value      = hk;  markStepDone('step2-card',  'hs-key-status',      '✓ HubSpot token loaded'); }
+  if (hnk) { document.getElementById('inp-hunter-key').value  = hnk; markStepDone('step3-card',  'hunter-key-status',  '✓ Hunter key loaded'); }
 }
 
 function saveGoogleKey() {
@@ -1132,6 +1204,14 @@ function saveHsKey() {
   updateConnStatus(); toast('HubSpot token saved ✓', 'success');
 }
 
+function saveHunterKey() {
+  const v = document.getElementById('inp-hunter-key').value.trim();
+  if (!v) return toast('Enter your Hunter.io API key first', 'error');
+  localStorage.setItem('boris_hunter_key', v);
+  markStepDone('step3-card', 'hunter-key-status', '✓ Hunter key saved');
+  updateConnStatus(); toast('Hunter.io key saved ✓', 'success');
+}
+
 function markStepDone(cardId, statusId, msg) {
   document.getElementById(cardId).classList.add('done');
   document.getElementById(statusId).textContent = msg;
@@ -1148,7 +1228,7 @@ function validateHsKey() {
 }
 
 function updateConnStatus() {
-  const gk = getGoogleKey(), hk = getHsKey();
+  const gk = getGoogleKey(), hk = getHsKey(), hnk = getHunterKey();
   const el = document.getElementById('conn-status');
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
@@ -1158,6 +1238,10 @@ function updateConnStatus() {
     <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
       <span style="color:${hk?'var(--green)':'var(--text3)'}">${hk?'✅':'⬜'}</span>
       <span style="color:${hk?'var(--text)':'var(--text3)'}">HubSpot ${hk?'— connected':'— not set up (HubSpot push won\'t work)'}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem">
+      <span style="color:${hnk?'var(--green)':'var(--text3)'}">${hnk?'✅':'⬜'}</span>
+      <span style="color:${hnk?'var(--text)':'var(--text3)'}">Hunter.io ${hnk?'— connected':'— not set up (contact lookup won\'t work)'}</span>
     </div>
     ${!gk ? '<div style="font-size:0.75rem;color:var(--amber);margin-top:0.5rem">⚠️ Add your Google Places key to enable company search</div>' : ''}
   `;
@@ -1603,16 +1687,16 @@ function renderTable() {
       ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpot(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpot(${globalIdx})">→ HubSpot</button>`;
 
-    // Hunter.io + Add Contact buttons
+    // ⚡ Find Contacts (Hunter) + manual Add Contact buttons
     const hunterDomain = extractDomain(r.website);
-    const hunterBtn = hunterDomain
-      ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hunterDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+    const findContactsBtn = hunterDomain
+      ? `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'results')">⚡ Find Contacts</button>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const addContactBtn = !r.pushedToHS
-      ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Push company to HubSpot first">👤 Add Contact</button>`
+      ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed;font-size:0.65rem;padding:0.2rem 0.5rem" title="Push company to HubSpot first">👤 Add</button>`
       : r.contactAdded
-        ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" style="background:var(--green-dim);color:var(--green);border-color:rgba(34,197,94,0.3)" title="Add another contact">✓ Contact Added</button>`
-        : `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
+        ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" style="background:var(--green-dim);color:var(--green);border-color:rgba(34,197,94,0.3);font-size:0.65rem;padding:0.2rem 0.5rem" title="Add another contact">✓ Added</button>`
+        : `<button class="contact-btn" onclick="openContactModal(${globalIdx},'results')" style="font-size:0.65rem;padding:0.2rem 0.5rem" title="Manually add a contact to HubSpot">👤 Add</button>`;
 
     // What to say
     let pitch = '';
@@ -1638,7 +1722,7 @@ function renderTable() {
           ${stageOpts}
         </select>
       </td>
-      <td style="white-space:nowrap">${hunterBtn} ${addContactBtn}</td>
+      <td><div style="display:flex;flex-direction:column;gap:0.3rem;align-items:flex-start">${findContactsBtn}${addContactBtn}</div></td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -1654,7 +1738,7 @@ function renderTable() {
           <th style="width:140px">Chat Status</th>
           <th style="width:160px">Platform Detected</th>
           <th style="width:160px">Stage</th>
-          <th style="width:120px">Find Contact</th>
+          <th style="width:130px">Contacts</th>
           <th style="width:110px">HubSpot</th>
         </tr>
       </thead>
@@ -1875,14 +1959,14 @@ function renderHistory() {
       ? `<button class="hs-btn hs-btn-sent" onclick="pushToHubSpotHistory(${globalIdx})">↻ Update HubSpot</button>`
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
     const hDomain = extractDomain(r.website);
-    const hunterBtnH = hDomain
-      ? `<a class="hunter-btn" href="https://hunter.io/domain-search?domain=${hDomain}" target="_blank" title="Search for contacts on Hunter.io (free)">🔍 Find Contact</a>`
+    const findContactsBtnH = hDomain
+      ? `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'history')">⚡ Find Contacts</button>`
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const addContactBtnH = !r.pushedToHS
-      ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Push company to HubSpot first">👤 Add Contact</button>`
+      ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed;font-size:0.65rem;padding:0.2rem 0.5rem" title="Push company to HubSpot first">👤 Add</button>`
       : r.contactAdded
-        ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" style="background:var(--green-dim);color:var(--green);border-color:rgba(34,197,94,0.3)" title="Add another contact">✓ Contact Added</button>`
-        : `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" title="Add a contact to HubSpot for this company">👤 Add Contact</button>`;
+        ? `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" style="background:var(--green-dim);color:var(--green);border-color:rgba(34,197,94,0.3);font-size:0.65rem;padding:0.2rem 0.5rem" title="Add another contact">✓ Added</button>`
+        : `<button class="contact-btn" onclick="openContactModal(${globalIdx},'history')" style="font-size:0.65rem;padding:0.2rem 0.5rem" title="Manually add a contact to HubSpot">👤 Add</button>`;
     const searchTag = r.searchLabel ? `<span style="font-family:var(--mono);font-size:0.6rem;color:var(--text3);background:var(--surface3);border:1px solid var(--border2);border-radius:3px;padding:0.1rem 0.35rem">${r.searchLabel}</span>` : '';
     return `<tr>
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
@@ -1902,7 +1986,7 @@ function renderHistory() {
       </td>
       <td>${chatBadge}</td>
       <td>${r.platforms&&r.platforms.length?r.platforms.map(p=>`<span class="ptag">${p}</span>`).join(''):'—'}</td>
-      <td style="white-space:nowrap">${hunterBtnH} ${addContactBtnH}</td>
+      <td><div style="display:flex;flex-direction:column;gap:0.3rem;align-items:flex-start">${findContactsBtnH}${addContactBtnH}</div></td>
       <td>${hsBtn}</td>
     </tr>`;
   }).join('');
@@ -2032,6 +2116,192 @@ function exportHistory() {
   a.download = `boris-prospect-history-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   toast(`Exported ${history_.length} companies to CSV ✓`, 'success');
+}
+
+// ════════════════════════════════════════════════════
+// HUNTER MULTI-CONTACT MODAL
+// ════════════════════════════════════════════════════
+let _hunterRecord   = null;
+let _hunterContacts = [];
+let _hunterShowAll  = false;
+
+const HUNTER_TIERS = [
+  ['marketing manager','head of marketing','marketing director','digital marketing'],
+  ['operations manager','practice manager','office manager'],
+  ['managing partner','partner','director'],
+  ['manager'],
+];
+
+function hunterTier(title) {
+  const t = (title || '').toLowerCase();
+  for (let i = 0; i < HUNTER_TIERS.length; i++) {
+    if (HUNTER_TIERS[i].some(p => t.includes(p))) return i + 1;
+  }
+  return 5;
+}
+
+async function openHunterModal(idx, source) {
+  const r = source === 'history' ? history_[idx] : results[idx];
+  if (!r) return;
+  const hunterKey = getHunterKey();
+  if (!hunterKey) { toast('Please add your Hunter.io API key in Setup first', 'error'); return; }
+
+  _hunterRecord   = r;
+  _hunterContacts = [];
+  _hunterShowAll  = false;
+
+  document.getElementById('hunter-modal-company').textContent = r.name;
+  document.getElementById('hunter-modal-sub').textContent     = extractDomain(r.website) || '';
+  document.getElementById('hunter-loading').style.display        = 'block';
+  document.getElementById('hunter-empty').style.display          = 'none';
+  document.getElementById('hunter-contacts-wrap').style.display  = 'none';
+  document.getElementById('hunter-push-btn').disabled            = true;
+  document.getElementById('hunter-push-btn').textContent         = 'Push Selected to HubSpot';
+  document.getElementById('hunter-modal').classList.add('open');
+
+  const domain = extractDomain(r.website);
+  if (!domain) {
+    document.getElementById('hunter-loading').style.display = 'none';
+    document.getElementById('hunter-empty').style.display   = 'block';
+    document.getElementById('hunter-empty').textContent     = 'No domain available for this company';
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/hunter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain, apiKey: hunterKey }),
+    });
+    const data = await resp.json();
+    document.getElementById('hunter-loading').style.display = 'none';
+
+    if (data.error) {
+      document.getElementById('hunter-empty').style.display = 'block';
+      document.getElementById('hunter-empty').textContent   = `Hunter error: ${data.error}`;
+      return;
+    }
+
+    _hunterContacts = data.contacts || [];
+    if (!_hunterContacts.length) {
+      document.getElementById('hunter-empty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('hunter-contacts-wrap').style.display = 'block';
+    renderHunterContacts();
+  } catch (e) {
+    document.getElementById('hunter-loading').style.display = 'none';
+    document.getElementById('hunter-empty').style.display   = 'block';
+    document.getElementById('hunter-empty').textContent     = 'Failed to reach Hunter.io — check your connection';
+  }
+}
+
+function closeHunterModal() {
+  document.getElementById('hunter-modal').classList.remove('open');
+  _hunterRecord   = null;
+  _hunterContacts = [];
+}
+
+function renderHunterContacts() {
+  // Preserve checked state by original contact index before re-render
+  const checkedSet = new Set(
+    [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')]
+      .map(cb => parseInt(cb.dataset.hidx))
+  );
+
+  const hasTier5  = _hunterContacts.some(c => c.tier === 5);
+  const tier5Count = _hunterContacts.filter(c => c.tier === 5).length;
+  const visible   = _hunterShowAll ? _hunterContacts : _hunterContacts.filter(c => c.tier < 5);
+
+  const showAllBtn = document.getElementById('hunter-show-all-btn');
+  showAllBtn.style.display = hasTier5 ? 'block' : 'none';
+  if (hasTier5) showAllBtn.textContent = _hunterShowAll ? '▴ Show fewer contacts' : `▾ Show all contacts (${tier5Count} more)`;
+
+  const html = visible.map(c => {
+    const origIdx      = _hunterContacts.indexOf(c);
+    const checked      = checkedSet.size > 0 ? checkedSet.has(origIdx) : c.tier <= 2;
+    const dotClass     = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
+    const fullName     = [c.firstName, c.lastName].filter(Boolean).join(' ') || '(no name)';
+    const liLink       = c.linkedinUrl ? ` <a href="${c.linkedinUrl}" target="_blank" style="color:var(--accent);text-decoration:none">🔗</a>` : '';
+    return `<div class="hunter-contact-item">
+      <input type="checkbox" ${checked?'checked':''} data-hidx="${origIdx}" onchange="updateHunterPushBtn()" style="margin-top:0.2rem;accent-color:var(--accent);cursor:pointer">
+      <div class="hunter-contact-info">
+        <div class="hunter-contact-name">${fullName}${liLink}</div>
+        <div class="hunter-contact-jobtitle">${c.jobTitle || '—'}</div>
+        <div class="hunter-contact-email">
+          <span class="conf-dot ${dotClass}"></span>
+          <span>${c.email}</span>
+          <span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('hunter-contacts-list').innerHTML = html;
+  updateHunterPushBtn();
+}
+
+function toggleHunterShowAll() {
+  _hunterShowAll = !_hunterShowAll;
+  renderHunterContacts();
+}
+
+function updateHunterPushBtn() {
+  const n   = document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked').length;
+  const btn = document.getElementById('hunter-push-btn');
+  btn.disabled    = n === 0;
+  btn.textContent = n > 0 ? `Push ${n} Contact${n > 1 ? 's' : ''} to HubSpot` : 'Push Selected to HubSpot';
+}
+
+async function pushSelectedContacts() {
+  const hsKey = getHsKey();
+  if (!hsKey) { toast('Add your HubSpot token in Setup first', 'error'); return; }
+
+  const checkboxes = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
+  if (!checkboxes.length) return;
+
+  const selected     = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(Boolean);
+  const btn          = document.getElementById('hunter-push-btn');
+  btn.disabled       = true;
+  const companyDomain = extractDomain(_hunterRecord?.website);
+  const chatPresence  = getChatbotPresence(_hunterRecord);
+
+  let pushed = 0, errors = 0;
+  for (let i = 0; i < selected.length; i++) {
+    const c = selected[i];
+    btn.textContent = `Pushing contact ${i + 1} of ${selected.length}…`;
+    const contactProperties = {
+      firstname: c.firstName,
+      lastname:  c.lastName,
+      email:     c.email,
+      jobtitle:  c.jobTitle,
+      chatbot_presence_co: chatPresence,
+    };
+    if (c.linkedinUrl) contactProperties.hs_linkedin_url = c.linkedinUrl;
+    try {
+      const resp = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: hsKey, contactProperties, companyDomain }),
+      });
+      const data = await resp.json();
+      if (data.error) errors++; else pushed++;
+    } catch(e) { errors++; }
+  }
+
+  if (pushed > 0 && _hunterRecord) {
+    _hunterRecord.contactAdded = true;
+    saveToStorage();
+    renderTable();
+    renderHistory();
+  }
+
+  closeHunterModal();
+
+  if (errors === 0)       toast(`${pushed} contact${pushed > 1 ? 's' : ''} added to HubSpot ✓`, 'success');
+  else if (pushed > 0)    toast(`${pushed} added, ${errors} failed`, 'error');
+  else                    toast('Failed to push contacts to HubSpot', 'error');
 }
 
 </script>
