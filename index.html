@@ -449,10 +449,6 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 .hunter-contact-email { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.25rem; font-family: var(--mono); font-size: 0.7rem; color: var(--text2); }
 .hunter-show-all-btn { background: none; border: none; color: var(--accent); font-size: 0.75rem; cursor: pointer; padding: 0.35rem 0; font-family: var(--sans); display: block; }
 .hunter-show-all-btn:hover { text-decoration: underline; }
-.hunter-email-masked { color: var(--text3); font-style: italic; }
-.hunter-email-revealed { color: var(--text2); }
-.hunter-spin { display: inline-block; width: 0.7rem; height: 0.7rem; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: hspin 0.6s linear infinite; vertical-align: middle; }
-@keyframes hspin { to { transform: rotate(360deg); } }
 
 /* Stage select */
 .stage-sel {
@@ -906,19 +902,17 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
   <div class="modal-box" style="max-width:500px;width:100%">
     <div class="modal-title">Contacts found at <span id="hunter-modal-company" style="color:var(--cyan)"></span></div>
     <div class="modal-sub" id="hunter-modal-sub"></div>
-    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;line-height:1.5">Select contacts, reveal their emails (1 credit each), then push to HubSpot.</div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:0.75rem;line-height:1.5">Review contacts, then push company and selected contacts to HubSpot in one click.</div>
     <div id="hunter-loading" style="text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">Searching Hunter.io…</div>
     <div id="hunter-empty" style="display:none;text-align:center;padding:2rem 0;color:var(--text3);font-size:0.85rem">No contacts found on Hunter.io for this domain</div>
     <div id="hunter-contacts-wrap" style="display:none">
       <div class="hunter-contacts-scroll" id="hunter-contacts-list"></div>
       <button class="hunter-show-all-btn" id="hunter-show-all-btn" style="display:none" onclick="toggleHunterShowAll()">▾ Show all contacts</button>
     </div>
-    <div id="hunter-credit-hint" style="display:none;font-size:0.72rem;color:var(--text3);margin-bottom:0.25rem;padding:0 0.1rem"></div>
     <div class="modal-actions" style="flex-wrap:wrap;gap:0.5rem">
       <button class="btn btn-ghost btn-sm" onclick="closeHunterModal()">Cancel</button>
-      <button class="btn btn-outline btn-sm" id="hunter-reveal-btn" disabled onclick="revealSelectedEmails()">Reveal Emails</button>
       <button class="btn btn-outline btn-sm" id="hunter-push-btn" disabled onclick="pushSelectedContacts()" title="Use this if the company is already in HubSpot">Push Contacts Only</button>
-      <button class="btn btn-primary btn-sm" id="hunter-push-all-btn" disabled onclick="pushCompanyAndContacts()">Push Company to HubSpot</button>
+      <button class="btn btn-primary btn-sm" id="hunter-push-all-btn" onclick="pushCompanyAndContacts()">Push Company to HubSpot</button>
     </div>
   </div>
 </div>
@@ -2137,10 +2131,9 @@ function exportHistory() {
 // ════════════════════════════════════════════════════
 // HUNTER MULTI-CONTACT MODAL
 // ════════════════════════════════════════════════════
-let _hunterRecord    = null;
-let _hunterContacts  = [];
-let _hunterShowAll   = false;
-let _hunterRevealing = false;
+let _hunterRecord   = null;
+let _hunterContacts = [];
+let _hunterShowAll  = false;
 
 const HUNTER_TIERS = [
   ['marketing manager','head of marketing','marketing director','digital marketing'],
@@ -2163,22 +2156,18 @@ async function openHunterModal(idx, source) {
   const hunterKey = getHunterKey();
   if (!hunterKey) { toast('Please add your Hunter.io API key in Setup first', 'error'); return; }
 
-  _hunterRecord    = r;
-  _hunterContacts  = [];
-  _hunterShowAll   = false;
-  _hunterRevealing = false;
+  _hunterRecord   = r;
+  _hunterContacts = [];
+  _hunterShowAll  = false;
 
   document.getElementById('hunter-modal-company').textContent = r.name;
   document.getElementById('hunter-modal-sub').textContent     = extractDomain(r.website) || '';
   document.getElementById('hunter-loading').style.display        = 'block';
   document.getElementById('hunter-empty').style.display          = 'none';
   document.getElementById('hunter-contacts-wrap').style.display  = 'none';
-  document.getElementById('hunter-credit-hint').style.display    = 'none';
-  document.getElementById('hunter-reveal-btn').disabled          = true;
-  document.getElementById('hunter-reveal-btn').textContent       = 'Reveal Emails';
   document.getElementById('hunter-push-btn').disabled            = true;
   document.getElementById('hunter-push-btn').textContent         = 'Push Contacts Only';
-  document.getElementById('hunter-push-all-btn').disabled        = true;
+  document.getElementById('hunter-push-all-btn').disabled        = false;
   document.getElementById('hunter-push-all-btn').textContent     = 'Push Company to HubSpot';
   document.getElementById('hunter-modal').classList.add('open');
 
@@ -2242,27 +2231,20 @@ function renderHunterContacts() {
   if (hasTier5) showAllBtn.textContent = _hunterShowAll ? '▴ Show fewer contacts' : `▾ Show all contacts (${tier5Count} more)`;
 
   const html = visible.map(c => {
-    const origIdx  = _hunterContacts.indexOf(c);
-    const checked  = checkedSet.size > 0 ? checkedSet.has(origIdx) : c.tier <= 2;
-    const dotClass = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
-    const fullName = [c.firstName, c.lastName].filter(Boolean).join(' ') || '(no name)';
-    const liLink   = c.linkedinUrl ? ` <a href="${c.linkedinUrl}" target="_blank" style="color:var(--accent);text-decoration:none">🔗</a>` : '';
-    let emailHtml;
-    if (c.emailRevealed) {
-      emailHtml = `<span class="hunter-email-revealed">${c.email}</span><span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>`;
-    } else if (c.emailRevealing) {
-      emailHtml = `<span class="hunter-email-masked">${c.maskedEmail}</span><span class="hunter-spin"></span>`;
-    } else {
-      emailHtml = `<span class="hunter-email-masked">${c.maskedEmail}</span><span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>`;
-    }
+    const origIdx      = _hunterContacts.indexOf(c);
+    const checked      = checkedSet.size > 0 ? checkedSet.has(origIdx) : c.tier <= 2;
+    const dotClass     = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
+    const fullName     = [c.firstName, c.lastName].filter(Boolean).join(' ') || '(no name)';
+    const liLink       = c.linkedinUrl ? ` <a href="${c.linkedinUrl}" target="_blank" style="color:var(--accent);text-decoration:none">🔗</a>` : '';
     return `<div class="hunter-contact-item">
       <input type="checkbox" ${checked?'checked':''} data-hidx="${origIdx}" onchange="updateHunterPushBtn()" style="margin-top:0.2rem;accent-color:var(--accent);cursor:pointer">
       <div class="hunter-contact-info">
         <div class="hunter-contact-name">${fullName}${liLink}</div>
         <div class="hunter-contact-jobtitle">${c.jobTitle || '—'}</div>
-        <div class="hunter-contact-email" id="hunter-email-row-${origIdx}">
+        <div class="hunter-contact-email">
           <span class="conf-dot ${dotClass}"></span>
-          ${emailHtml}
+          <span>${c.email}</span>
+          <span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>
         </div>
       </div>
     </div>`;
@@ -2278,117 +2260,18 @@ function toggleHunterShowAll() {
 }
 
 function updateHunterPushBtn() {
-  const checkboxes = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
-  const n          = checkboxes.length;
-
-  // Contacts that are checked AND have a revealed email
-  const revealedSelected = checkboxes
-    .map(cb => _hunterContacts[parseInt(cb.dataset.hidx)])
-    .filter(c => c && c.emailRevealed);
-
-  // Contacts that are checked AND not yet revealed (eligible for reveal)
-  const unrevealed = checkboxes
-    .map(cb => _hunterContacts[parseInt(cb.dataset.hidx)])
-    .filter(c => c && !c.emailRevealed && !c.emailRevealing);
-
-  // Reveal button
-  const revealBtn = document.getElementById('hunter-reveal-btn');
-  if (revealBtn) {
-    revealBtn.disabled = unrevealed.length === 0 || _hunterRevealing;
-    revealBtn.textContent = unrevealed.length > 0
-      ? `Reveal ${unrevealed.length} email${unrevealed.length > 1 ? 's' : ''} (${unrevealed.length} credit${unrevealed.length > 1 ? 's' : ''})`
-      : 'Reveal Emails';
-  }
-
-  // Credit hint
-  const hint = document.getElementById('hunter-credit-hint');
-  if (hint) {
-    if (unrevealed.length > 0) {
-      hint.style.display  = 'block';
-      hint.textContent    = `This will use ${unrevealed.length} credit${unrevealed.length > 1 ? 's' : ''} — one per selected contact`;
-    } else {
-      hint.style.display = 'none';
-    }
-  }
-
-  // Push contacts only — requires at least 1 revealed+selected contact
+  const n       = document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked').length;
   const btnOnly = document.getElementById('hunter-push-btn');
-  btnOnly.disabled    = revealedSelected.length === 0;
-  btnOnly.textContent = revealedSelected.length > 0
-    ? `Push ${revealedSelected.length} Contact${revealedSelected.length > 1 ? 's' : ''} Only`
-    : 'Push Contacts Only';
+  const btnAll  = document.getElementById('hunter-push-all-btn');
 
-  // Push company + contacts — enabled once any email revealed
-  const anyRevealed = _hunterContacts.some(c => c.emailRevealed);
-  const btnAll = document.getElementById('hunter-push-all-btn');
-  btnAll.disabled    = !anyRevealed;
-  btnAll.textContent = revealedSelected.length > 0
-    ? `Push Company + ${revealedSelected.length} Contact${revealedSelected.length > 1 ? 's' : ''} to HubSpot`
-    : 'Push Company to HubSpot';
-}
+  btnOnly.disabled    = n === 0;
+  btnOnly.textContent = n > 0 ? `Push ${n} Contact${n > 1 ? 's' : ''} Only` : 'Push Contacts Only';
 
-async function revealSelectedEmails() {
-  const hunterKey = getHunterKey();
-  if (!hunterKey) { toast('Add your Hunter.io API key in Setup first', 'error'); return; }
-  const domain = extractDomain(_hunterRecord?.website);
-  if (!domain) return;
-
-  const checkboxes = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
-  const toReveal = checkboxes
-    .map(cb => parseInt(cb.dataset.hidx))
-    .filter(idx => {
-      const c = _hunterContacts[idx];
-      return c && !c.emailRevealed && !c.emailRevealing;
-    });
-  if (!toReveal.length) return;
-
-  _hunterRevealing = true;
-  updateHunterPushBtn();
-
-  for (const idx of toReveal) {
-    const c = _hunterContacts[idx];
-    c.emailRevealing = true;
-    // Update just this contact's email row without re-rendering the whole list
-    const row = document.getElementById(`hunter-email-row-${idx}`);
-    if (row) {
-      const dotClass = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
-      row.innerHTML = `<span class="conf-dot ${dotClass}"></span><span class="hunter-email-masked">${c.maskedEmail}</span><span class="hunter-spin"></span>`;
-    }
-
-    try {
-      const resp = await fetch('/api/hunter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reveal', domain, apiKey: hunterKey, firstName: c.firstName, lastName: c.lastName }),
-      });
-      const data = await resp.json();
-      c.emailRevealing = false;
-      if (data.email) {
-        c.email         = data.email;
-        c.emailRevealed = true;
-      } else {
-        c.emailRevealed = false;
-        toast(`Could not reveal email for ${c.firstName} ${c.lastName}`, 'error');
-      }
-    } catch(e) {
-      c.emailRevealing = false;
-      c.emailRevealed  = false;
-    }
-
-    // Update the email row in-place
-    const rowAfter = document.getElementById(`hunter-email-row-${idx}`);
-    if (rowAfter) {
-      const dotClass = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
-      if (c.emailRevealed) {
-        rowAfter.innerHTML = `<span class="conf-dot ${dotClass}"></span><span class="hunter-email-revealed">${c.email}</span><span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>`;
-      } else {
-        rowAfter.innerHTML = `<span class="conf-dot ${dotClass}"></span><span class="hunter-email-masked">${c.maskedEmail}</span><span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>`;
-      }
-    }
+  if (btnAll && !btnAll.disabled) {
+    btnAll.textContent = n > 0
+      ? `Push Company + ${n} Contact${n > 1 ? 's' : ''} to HubSpot`
+      : 'Push Company to HubSpot';
   }
-
-  _hunterRevealing = false;
-  updateHunterPushBtn();
 }
 
 async function pushCompanyAndContacts() {
@@ -2433,7 +2316,7 @@ async function pushCompanyAndContacts() {
 
   // Step 2 — push selected contacts (revealed emails only)
   const checkboxes    = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
-  const selected      = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(c => c && c.emailRevealed);
+  const selected      = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(Boolean);
   const companyDomain = extractDomain(r.website);
   const chatPresence  = getChatbotPresence(r);
   let pushed = 0, errors = 0;
@@ -2479,7 +2362,7 @@ async function pushSelectedContacts() {
   const checkboxes = [...document.querySelectorAll('#hunter-contacts-list input[type=checkbox]:checked')];
   if (!checkboxes.length) return;
 
-  const selected     = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(c => c && c.emailRevealed);
+  const selected     = checkboxes.map(cb => _hunterContacts[parseInt(cb.dataset.hidx)]).filter(Boolean);
   const btn          = document.getElementById('hunter-push-btn');
   btn.disabled       = true;
   const companyDomain = extractDomain(_hunterRecord?.website);
