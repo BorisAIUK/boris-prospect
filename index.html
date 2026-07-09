@@ -925,7 +925,7 @@ const PLATFORMS = [
   // Enterprise — chat-widget-specific patterns only
   { name:"Intercom",        tier:"enterprise", score:88, patterns:["intercom.io","intercomcdn.com"] },
   { name:"Drift",           tier:"enterprise", score:85, patterns:["js.drift.com","driftt.com"] },
-  { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zopim.com","ze-snippet.js","zendesk.com/embeddable_framework","zd-messenger","ekr.zdassets.com"] },
+  { name:"Zendesk",         tier:"enterprise", score:82, patterns:["zopim.com","assets.zendesk.com","zendesk.com/embeddable_framework","ekr.zdassets.com"] },
   { name:"Salesforce Chat", tier:"enterprise", score:78, patterns:["force.com/embeddedservice/chat","liveagent.salesforce.com"] },
   { name:"LivePerson",      tier:"enterprise", score:76, patterns:["liveperson.net","lpcdn.lpsnmedia"] },
   // Mid — chat-widget-specific patterns only
@@ -1498,6 +1498,16 @@ async function detectChat(domain) {
   if (!html || html.length < 100) return { status:'blocked', platforms:[], tier:null, facebookUrl:null, instagramUrl:null };
 
   const lower = html.toLowerCase();
+
+  // Extract social URLs before blocklist check so they're always captured
+  let facebookUrl = null;
+  let instagramUrl = null;
+
+  // Yoshki blocklist: sites using yoshki.com contain strings that match other platform patterns — treat as no platform
+  if (lower.includes('yoshki.com')) {
+    return { status:'none', platforms:[], tier:'none', facebookUrl:null, instagramUrl:null };
+  }
+
   const found = [];
   for (const p of PLATFORMS) {
     for (const pat of p.patterns) {
@@ -1506,7 +1516,6 @@ async function detectChat(domain) {
   }
 
   // Extract Facebook page URL — always normalise to https://www.facebook.com/
-  let facebookUrl = null;
   const fbRegex = /(?:href|src)=["']([^"']*(?:facebook\.com|fb\.com)\/[^"'?#\s]+)/gi;
   let fbMatch;
   while ((fbMatch = fbRegex.exec(html)) !== null) {
@@ -1521,7 +1530,6 @@ async function detectChat(domain) {
   }
 
   // Extract Instagram page URL
-  let instagramUrl = null;
   const igRegex = /(?:href|src)=["']([^"']*instagram\.com\/[^"'?#\s]+)/gi;
   let igMatch;
   while ((igMatch = igRegex.exec(html)) !== null) {
