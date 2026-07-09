@@ -2156,12 +2156,37 @@ async function openHunterModal(idx, source) {
   const hunterKey = getHunterKey();
   if (!hunterKey) { toast('Please add your Hunter.io API key in Setup first', 'error'); return; }
 
+  const domain = extractDomain(r.website);
+  if (!domain) { toast('No domain available for this company', 'error'); return; }
+
+  // Step 1 — free count check (no Hunter credits)
+  let preCount = null;
+  try {
+    const countResp = await fetch('/api/hunter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'count', domain, apiKey: hunterKey }),
+    });
+    const countData = await countResp.json();
+    if (!countData.error && countData.count === 0) {
+      toast('No contacts found on Hunter.io for this domain', 'error');
+      return;
+    }
+    if (!countData.error) preCount = countData.count;
+  } catch(e) {
+    // count check failed — proceed to full search anyway
+  }
+
+  // Step 2 — open modal and run full domain search (uses 1 credit)
   _hunterRecord   = r;
   _hunterContacts = [];
   _hunterShowAll  = false;
 
-  document.getElementById('hunter-modal-company').textContent = r.name;
-  document.getElementById('hunter-modal-sub').textContent     = extractDomain(r.website) || '';
+  document.getElementById('hunter-modal-company').textContent    = r.name;
+  document.getElementById('hunter-modal-sub').textContent        = domain;
+  document.getElementById('hunter-loading').textContent          = preCount
+    ? `Searching Hunter.io — ${preCount} contact${preCount > 1 ? 's' : ''} found…`
+    : 'Searching Hunter.io…';
   document.getElementById('hunter-loading').style.display        = 'block';
   document.getElementById('hunter-empty').style.display          = 'none';
   document.getElementById('hunter-contacts-wrap').style.display  = 'none';
@@ -2170,14 +2195,6 @@ async function openHunterModal(idx, source) {
   document.getElementById('hunter-push-all-btn').disabled        = false;
   document.getElementById('hunter-push-all-btn').textContent     = 'Push Company to HubSpot';
   document.getElementById('hunter-modal').classList.add('open');
-
-  const domain = extractDomain(r.website);
-  if (!domain) {
-    document.getElementById('hunter-loading').style.display = 'none';
-    document.getElementById('hunter-empty').style.display   = 'block';
-    document.getElementById('hunter-empty').textContent     = 'No domain available for this company';
-    return;
-  }
 
   try {
     const resp = await fetch('/api/hunter', {
