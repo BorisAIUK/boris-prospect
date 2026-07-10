@@ -429,6 +429,8 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 }
 .hunter-find-btn:hover:not(:disabled) { background: rgba(6,182,212,0.22); }
 .hunter-find-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.hunter-find-btn.hunter-searched { background: rgba(148,163,184,0.1); color: var(--text3); border-color: rgba(148,163,184,0.25); }
+.hunter-find-btn.hunter-searched:hover:not(:disabled) { background: rgba(148,163,184,0.18); }
 
 /* Email confidence dot */
 .conf-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
@@ -1700,7 +1702,9 @@ function renderTable() {
     // ⚡ Find Contacts (Hunter) + manual Add Contact buttons
     const hunterDomain = extractDomain(r.website);
     const findContactsBtn = hunterDomain
-      ? `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'results')">⚡ Find Contacts</button>`
+      ? (r.hunterSearched
+          ? `<button class="hunter-find-btn hunter-searched" onclick="openHunterModal(${globalIdx},'results')" title="Hunter already searched — click to search again">⚡ Searched</button>`
+          : `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'results')">⚡ Find Contacts</button>`)
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const addContactBtn = !r.pushedToHS
       ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed;font-size:0.65rem;padding:0.2rem 0.5rem" title="Push company to HubSpot first">👤 Add</button>`
@@ -1970,7 +1974,9 @@ function renderHistory() {
       : `<button class="hs-btn hs-btn-ready" onclick="pushToHubSpotHistory(${globalIdx})">→ HubSpot</button>`;
     const hDomain = extractDomain(r.website);
     const findContactsBtnH = hDomain
-      ? `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'history')">⚡ Find Contacts</button>`
+      ? (r.hunterSearched
+          ? `<button class="hunter-find-btn hunter-searched" onclick="openHunterModal(${globalIdx},'history')" title="Hunter already searched — click to search again">⚡ Searched</button>`
+          : `<button class="hunter-find-btn" onclick="openHunterModal(${globalIdx},'history')">⚡ Find Contacts</button>`)
       : `<span style="color:var(--text3);font-size:0.7rem">—</span>`;
     const addContactBtnH = !r.pushedToHS
       ? `<button class="contact-btn" disabled style="opacity:0.35;cursor:not-allowed;font-size:0.65rem;padding:0.2rem 0.5rem" title="Push company to HubSpot first">👤 Add</button>`
@@ -2210,6 +2216,11 @@ async function openHunterModal(idx, source) {
       document.getElementById('hunter-empty').textContent   = `Hunter error: ${data.error}`;
       return;
     }
+
+    r.hunterSearched = true;
+    saveToStorage();
+    renderTable();
+    renderHistory();
 
     _hunterContacts = data.contacts || [];
     if (!_hunterContacts.length) {
