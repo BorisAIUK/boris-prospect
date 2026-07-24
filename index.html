@@ -663,7 +663,7 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
     <div class="kpi"><div class="kpi-label">🔵 Competitor</div><div class="kpi-val c-blue" id="k-comp">—</div><div class="kpi-sub">Switch opportunity</div></div>
     <div class="kpi"><div class="kpi-label">🔴 Hot Leads</div><div class="kpi-val c-red" id="k-hot">—</div><div class="kpi-sub">Score 70+</div></div>
     <div class="kpi"><div class="kpi-label">Pushed to HubSpot</div><div class="kpi-val c-muted" id="k-hs">—</div></div>
-    <div class="kpi"><div class="kpi-label">Google Credit Used</div><div class="kpi-val c-amber" id="k-api-cost">£0.00</div><div class="kpi-sub" id="k-api-cost-sub">£158.00 remaining this month</div></div>
+    <div class="kpi"><div class="kpi-label">Google Credit Used</div><div class="kpi-val c-amber" id="k-api-cost">£0.00</div><div class="kpi-sub" id="k-api-cost-sub">£0.00 used | £138.25 remaining this month (5,000 free searches/month)</div></div>
   </div>
 
   <!-- Filters -->
@@ -814,7 +814,7 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
     <!-- Cost Tracker -->
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem">
       <div style="font-family:var(--display);font-weight:700;margin-bottom:0.4rem">Google API Cost Tracker</div>
-      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.75rem">Tracks Text Search and Place Details API usage against the $200/month free credit (≈ £158.00). Resets automatically on the 1st of each month.</div>
+      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.75rem">Tracks Text Search API usage against the 5,000 free calls/month allowance (≈ £138.25). Each Boris.Prospect search uses up to 3 Text Search calls. Resets automatically on the 1st of each month.</div>
       <div style="font-size:0.85rem;color:var(--text2);margin-bottom:0.75rem" id="setup-cost-summary">Loading…</div>
       <button class="btn btn-outline btn-sm" onclick="resetCostTracker()">↺ Reset Cost Tracker</button>
     </div>
@@ -992,11 +992,10 @@ function saveCostTracker() {
 }
 
 function calcApiCost() {
-  const USD_PER_TEXT  = 0.032;
-  const USD_PER_DETAIL = 0.017;
+  const USD_PER_TEXT  = 0.035; // Google Places Text Search Enterprise SKU (includes phone, website)
   const GBP_RATE = 0.79;
-  const FREE_GBP = 200 * GBP_RATE; // £158.00
-  const usedUSD = (costTracker.textSearches * USD_PER_TEXT) + (costTracker.detailLookups * USD_PER_DETAIL);
+  const FREE_GBP = 138.25; // 5,000 free Text Search calls × $0.035 × 0.79
+  const usedUSD = costTracker.textSearches * USD_PER_TEXT;
   const usedGBP = usedUSD * GBP_RATE;
   const remainingGBP = Math.max(0, FREE_GBP - usedGBP);
   return { usedGBP, remainingGBP };
@@ -1019,12 +1018,11 @@ function updateCostKPI() {
   const el = document.getElementById('k-api-cost');
   const sub = document.getElementById('k-api-cost-sub');
   if (el)  el.textContent  = `£${usedGBP.toFixed(2)}`;
-  if (sub) sub.textContent = `£${remainingGBP.toFixed(2)} remaining this month`;
+  if (sub) sub.textContent = `£${usedGBP.toFixed(2)} used | £${remainingGBP.toFixed(2)} remaining this month (5,000 free searches/month)`;
   const summary = document.getElementById('setup-cost-summary');
   if (summary) summary.textContent =
     `${costTracker.textSearches} text search${costTracker.textSearches !== 1 ? 'es' : ''} · ` +
-    `${costTracker.detailLookups} detail lookup${costTracker.detailLookups !== 1 ? 's' : ''} · ` +
-    `£${usedGBP.toFixed(2)} used · £${remainingGBP.toFixed(2)} remaining`;
+    `£${usedGBP.toFixed(2)} used · £${remainingGBP.toFixed(2)} remaining of £138.25 free allowance`;
 }
 
 // ════════════════════════════════════════════════════
