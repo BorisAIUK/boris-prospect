@@ -1,5 +1,7 @@
 const dns = require('dns').promises;
 const { URL } = require('url');
+const { isAuthed } = require('./_auth.js');
+const { rateLimit, clientKey } = require('./_rateLimit.js');
 
 // Private/reserved IPv4 ranges — a legitimate prospect website will never
 // resolve to one of these, so blocking them closes off SSRF against internal
@@ -36,6 +38,10 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!isAuthed(req)) return res.status(401).json({ error: 'Not authenticated' });
+
+  const limit = rateLimit(`fetch:${clientKey(req)}`, { limit: 60, windowMs: 60 * 1000 });
+  if (!limit.allowed) return res.status(429).json({ error: 'Too many requests — please slow down' });
 
   const { url } = req.body || {};
   if (!url) return res.status(400).json({ error: 'Missing url' });
