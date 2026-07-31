@@ -1626,6 +1626,17 @@ function clearResults() {
   renderTable();
 }
 
+// Escapes untrusted text before it's inserted into innerHTML — company
+// names, addresses, and social links can come from Google Places results or
+// an uploaded CSV, neither of which we control the contents of, so anything
+// that isn't a value we generated ourselves needs to pass through this
+// before it lands in a template string.
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 function renderTable() {
   const search = (document.getElementById('search-box')?.value||'').toLowerCase();
 
@@ -1682,12 +1693,12 @@ function renderTable() {
     const ptags = r.platforms.map(p=>`<span class="ptag">${p}</span>`).join('');
 
     // Contact
-    const phone = r.phone ? `<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>` : '';
+    const phone = r.phone ? `<div class="contact-line">📞 <a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a></div>` : '';
     const displayUrl = r.website && r.website.length > 35 ? r.website.slice(0, 35) + '…' : r.website;
-    const web   = r.website ? `<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${displayUrl}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
+    const web   = r.website ? `<div class="contact-line url-line">🌐 <a href="https://${escapeHtml(r.website)}" target="_blank">${escapeHtml(displayUrl)}</a></div>` : '<div class="contact-line" style="color:var(--text3)">No website</div>';
     const li    = r.name ? `<div class="contact-line">🔗 <a href="https://linkedin.com/company/${encodeURIComponent(r.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''))}" target="_blank">LinkedIn</a></div>` : '';
-    const fb    = r.facebookUrl   ? `<div class="contact-line">📘 <a href="${r.facebookUrl}" target="_blank">${r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, 'fb.com/')}</a></div>` : '';
-    const ig    = r.instagramUrl ? `<div class="contact-line">📷 <a href="${r.instagramUrl}" target="_blank">${r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, 'instagram.com/')}</a></div>` : '';
+    const fb    = r.facebookUrl   ? `<div class="contact-line">📘 <a href="${escapeHtml(r.facebookUrl)}" target="_blank">${escapeHtml(r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//, 'fb.com/'))}</a></div>` : '';
+    const ig    = r.instagramUrl ? `<div class="contact-line">📷 <a href="${escapeHtml(r.instagramUrl)}" target="_blank">${escapeHtml(r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, 'instagram.com/'))}</a></div>` : '';
 
     // Stage select
     const stageOpts = STAGES.map(s=>`<option value="${s}" ${r.stage===s?'selected':''}>${s}</option>`).join('');
@@ -1720,8 +1731,8 @@ function renderTable() {
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
       <td style="width:38px;text-align:center">${ring}</td>
       <td>
-        <div class="co-name"><a href="https://${r.website||'#'}" target="_blank">${r.name}</a></div>
-        <div style="font-size:0.68rem;color:var(--text3)">${r.address||''}</div>
+        <div class="co-name"><a href="https://${escapeHtml(r.website||'#')}" target="_blank">${escapeHtml(r.name)}</a></div>
+        <div style="font-size:0.68rem;color:var(--text3)">${escapeHtml(r.address||'')}</div>
         ${pitch}
       </td>
       <td>
@@ -1986,16 +1997,16 @@ function renderHistory() {
       <td style="width:36px;color:var(--text3);font-family:var(--mono);font-size:0.68rem">${idx+1}</td>
       <td style="width:38px;text-align:center">${ring}</td>
       <td>
-        <div class="co-name"><a href="https://${r.website||'#'}" target="_blank">${r.name}</a></div>
+        <div class="co-name"><a href="https://${escapeHtml(r.website||'#')}" target="_blank">${escapeHtml(r.name)}</a></div>
         <div style="margin-top:0.2rem">${searchTag}</div>
-        <div style="font-size:0.65rem;color:var(--text3)">${r.searchDate||''}</div>
+        <div style="font-size:0.65rem;color:var(--text3)">${escapeHtml(r.searchDate||'')}</div>
       </td>
       <td>
         <div class="contact-cell">
-          ${r.website?`<div class="contact-line url-line">🌐 <a href="https://${r.website}" target="_blank">${r.website.length>35?r.website.slice(0,35)+'…':r.website}</a></div>`:''}
-          ${r.phone?`<div class="contact-line">📞 <a href="tel:${r.phone}">${r.phone}</a></div>`:''}
-          ${r.facebookUrl?`<div class="contact-line">📘 <a href="${r.facebookUrl}" target="_blank">${r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//,'fb.com/')}</a></div>`:''}
-          ${r.instagramUrl?`<div class="contact-line">📷 <a href="${r.instagramUrl}" target="_blank">${r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//,'instagram.com/')}</a></div>`:''}
+          ${r.website?`<div class="contact-line url-line">🌐 <a href="https://${escapeHtml(r.website)}" target="_blank">${escapeHtml(r.website.length>35?r.website.slice(0,35)+'…':r.website)}</a></div>`:''}
+          ${r.phone?`<div class="contact-line">📞 <a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a></div>`:''}
+          ${r.facebookUrl?`<div class="contact-line">📘 <a href="${escapeHtml(r.facebookUrl)}" target="_blank">${escapeHtml(r.facebookUrl.replace(/^https?:\/\/(www\.)?facebook\.com\//,'fb.com/'))}</a></div>`:''}
+          ${r.instagramUrl?`<div class="contact-line">📷 <a href="${escapeHtml(r.instagramUrl)}" target="_blank">${escapeHtml(r.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//,'instagram.com/'))}</a></div>`:''}
         </div>
       </td>
       <td>${chatBadge}</td>
@@ -2260,16 +2271,16 @@ function renderHunterContacts() {
     const origIdx      = _hunterContacts.indexOf(c);
     const checked      = checkedSet.size > 0 ? checkedSet.has(origIdx) : c.tier <= 2;
     const dotClass     = c.confidence > 80 ? 'conf-dot-green' : c.confidence >= 50 ? 'conf-dot-amber' : 'conf-dot-red';
-    const fullName     = [c.firstName, c.lastName].filter(Boolean).join(' ') || '(no name)';
-    const liLink       = c.linkedinUrl ? ` <a href="${c.linkedinUrl}" target="_blank" style="color:var(--accent);text-decoration:none">🔗</a>` : '';
+    const fullName     = escapeHtml([c.firstName, c.lastName].filter(Boolean).join(' ') || '(no name)');
+    const liLink       = c.linkedinUrl ? ` <a href="${escapeHtml(c.linkedinUrl)}" target="_blank" style="color:var(--accent);text-decoration:none">🔗</a>` : '';
     return `<div class="hunter-contact-item">
       <input type="checkbox" ${checked?'checked':''} data-hidx="${origIdx}" onchange="updateHunterPushBtn()" style="margin-top:0.2rem;accent-color:var(--orange);cursor:pointer">
       <div class="hunter-contact-info">
         <div class="hunter-contact-name">${fullName}${liLink}</div>
-        <div class="hunter-contact-jobtitle">${c.jobTitle || '—'}</div>
+        <div class="hunter-contact-jobtitle">${escapeHtml(c.jobTitle || '—')}</div>
         <div class="hunter-contact-email">
           <span class="conf-dot ${dotClass}"></span>
-          <span>${c.email}</span>
+          <span>${escapeHtml(c.email)}</span>
           <span style="color:var(--text3);font-size:0.65rem">${c.confidence}%</span>
         </div>
       </div>
