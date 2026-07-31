@@ -1,5 +1,8 @@
 // Hunter.io domain search — returns contacts sorted by sales-relevance tier.
 
+const { isAuthed } = require('./_auth.js');
+const { rateLimit, clientKey } = require('./_rateLimit.js');
+
 const PRIORITY = [
   ['marketing manager','head of marketing','marketing director','digital marketing'],
   ['operations manager','practice manager','office manager'],
@@ -22,10 +25,18 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!isAuthed(req)) return res.status(401).json({ error: 'Not authenticated' });
 
   const { domain, apiKey, action } = req.body || {};
   if (!domain) return res.status(400).json({ error: 'Missing domain' });
   if (!apiKey)  return res.status(400).json({ error: 'Missing apiKey' });
+
+  // Full domain searches spend a real, paid Hunter.io credit each time, so
+  // this gets a tighter limit than the free count check below.
+  if (action !== 'count') {
+    const limit = rateLimit(`hunter-search:${clientKey(req)}`, { limit: 20, windowMs: 60 * 1000 });
+    if (!limit.allowed) return res.status(429).json({ error: 'Too many searches — please slow down' });
+  }
 
   // ── Free count check — no credits used ───────────────────────────────────
   if (action === 'count') {

@@ -1,6 +1,8 @@
 // Creates a HubSpot contact and associates it with an existing company.
 // NEVER creates a company record — only reads companies via search.
 
+const { isAuthed } = require('./_auth.js');
+
 function cleanDomain(raw) {
   return (raw || '')
     .replace(/^https?:\/\//i, '')
@@ -19,6 +21,7 @@ module.exports = async (req, res) => {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!isAuthed(req)) return res.status(401).json({ error: 'Not authenticated' });
 
   const { token, contactProperties, companyDomain } = req.body || {};
   if (!token)             return res.status(400).json({ error: 'Missing token' });

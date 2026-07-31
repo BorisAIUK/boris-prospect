@@ -10,6 +10,8 @@
     { "src": "/api/fetch",   "dest": "/api/fetch.js" },
     { "src": "/api/contact", "dest": "/api/contact.js" },
     { "src": "/api/hunter",  "dest": "/api/hunter.js" },
-    { "src": "/(.*)",        "dest": "/index.html" }
+    { "src": "/api/login",   "dest": "/api/login.js" },
+    { "src": "/api/logout",  "dest": "/api/logout.js" },
+    { "src": "/(.*)",        "dest": "/api/gate.js" }
   ]
 }
