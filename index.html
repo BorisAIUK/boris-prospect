@@ -955,7 +955,8 @@ const PLATFORMS = [
   { name:"CustomGPT",       tier:"basic", score:32, patterns:["customgpt.ai","cgpt-","customgpt-","data-customgpt","customgpt_widget"] },
   // Competitor — direct Boris rivals
   { name:"Commcore.ai",     tier:"competitor", score:65, patterns:["commcoreai.com","commcore.ai","commcoreai"] },
-  { name:"ReceptIO",        tier:"competitor", score:65, patterns:["receptio.ai","receptio"] },
+  // NOTE: bare "receptio" / "receptio.ai" intentionally omitted — matches "reception" in body text
+  { name:"ReceptIO",        tier:"competitor", score:65, patterns:["receptio.app","receptio-widget","cdn.receptio"] },
 ];
 
 const TIER_LABEL = { enterprise:'🔴 Enterprise', mid:'🔵 Competitor', competitor:'🔵 Competitor', basic:'🟡 Basic' };
@@ -1515,6 +1516,11 @@ async function detectChat(domain) {
     }
   }
 
+  // ReceptIO false-positive guard: only keep if pattern appears in a script/src/embed context,
+  // not just as the word "reception" in ordinary body text.
+  const rereceptioScriptRe = /(?:src|href|data-src)=["'][^"']*receptio(?:\.app|-widget)[^"']*["']|cdn\.receptio/i;
+  const foundFiltered = found.filter(p => p.name !== 'ReceptIO' || rereceptioScriptRe.test(html));
+
   // Extract Facebook page URL — always normalise to https://www.facebook.com/
   const fbRegex = /(?:href|src)=["']([^"']*(?:facebook\.com|fb\.com)\/[^"'?#\s]+)/gi;
   let fbMatch;
@@ -1542,13 +1548,13 @@ async function detectChat(domain) {
     }
   }
 
-  if (!found.length) return { status:'none', platforms:[], tier:'none', facebookUrl, instagramUrl };
+  if (!foundFiltered.length) return { status:'none', platforms:[], tier:'none', facebookUrl, instagramUrl };
 
   // Determine highest tier
-  const tiers = found.map(p=>p.tier);
+  const tiers = foundFiltered.map(p=>p.tier);
   const tier = tiers.includes('enterprise') ? 'enterprise' : tiers.includes('mid') ? 'mid' : tiers.includes('competitor') ? 'competitor' : 'basic';
 
-  return { status:'competitor', platforms: found.map(p=>p.name), tier, facebookUrl, instagramUrl };
+  return { status:'competitor', platforms: foundFiltered.map(p=>p.name), tier, facebookUrl, instagramUrl };
 }
 
 // ════════════════════════════════════════════════════
