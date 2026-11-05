@@ -2734,10 +2734,34 @@ function buildFilename(ext) {
   return `boris-prospect_${label}_${date}.${ext}`;
 }
 
+// ── UK postcode helpers ───────────────────────────────────────────────────────
+// Matches all standard UK formats (AN, ANN, AAN, AANN, ANA, AANA) with or
+// without a space between outward and inward codes, case-insensitive.
+// Output is normalised to uppercase with exactly one space before the inward
+// code (e.g. "ne14ab" → "NE1 4AB").  Returns null when no postcode is found.
+function extractPostcode(address) {
+  if (!address) return null;
+  const m = address.toUpperCase().match(
+    /\b([A-Z]{1,2}\d[A-Z\d]?)\s*(\d[A-Z]{2})\b/
+  );
+  return m ? m[1] + ' ' + m[2] : null;
+}
+
+// Everything before the space: "NE1 4AB" → "NE1"
+function postcodeDistrict(pc) {
+  return pc ? pc.split(' ')[0] : '';
+}
+
+// Leading letters only: "NE1 4AB" → "NE"
+function postcodeArea(pc) {
+  return pc ? (pc.match(/^[A-Z]+/)?.[0] || '') : '';
+}
+
 // Build the 2-D array (header + data rows) used by both download functions.
 function buildExportData(rows) {
   const HEADERS = [
-    'Company Name', 'Address', 'Phone', 'Website',
+    'Company Name', 'Address', 'Postcode', 'Postcode District', 'Postcode Area',
+    'Phone', 'Website',
     'Google Rating', 'Review Count', 'Chat Status', 'Platform Detected', 'Score',
     'Facebook', 'Instagram', 'LinkedIn',
     'Contact Name', 'Contact Job Title', 'Contact Email',
@@ -2747,9 +2771,13 @@ function buildExportData(rows) {
   const dataRows = rows.map(r => {
     const liSlug = (r.name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const liUrl  = liSlug ? `https://linkedin.com/company/${liSlug}` : '';
+    const pc     = extractPostcode(r.address);
     return [
       r.name            || '',
       r.address         || '',
+      pc                || '',            // Postcode
+      pc ? postcodeDistrict(pc) : '',     // Postcode District
+      pc ? postcodeArea(pc)     : '',     // Postcode Area
       r.phone           || '',
       r.website         ? 'https://' + r.website : '',
       r.rating          != null ? r.rating          : '',
@@ -2796,28 +2824,32 @@ function downloadXlsx(aoa, filename) {
 
   // Column widths (in characters)
   ws['!cols'] = [
-    {wch:30}, // Company Name
-    {wch:40}, // Address
-    {wch:16}, // Phone
-    {wch:35}, // Website
-    {wch:12}, // Google Rating
-    {wch:12}, // Review Count
-    {wch:14}, // Chat Status
-    {wch:30}, // Platform Detected
-    {wch: 7}, // Score
-    {wch:35}, // Facebook
-    {wch:35}, // Instagram
-    {wch:40}, // LinkedIn
-    {wch:25}, // Contact Name
-    {wch:25}, // Contact Job Title
-    {wch:35}, // Contact Email
-    {wch:11}, // Latitude
-    {wch:11}, // Longitude
+    {wch:30}, // Company Name       (col 0)
+    {wch:40}, // Address            (col 1)
+    {wch:10}, // Postcode           (col 2)
+    {wch:14}, // Postcode District  (col 3)
+    {wch:12}, // Postcode Area      (col 4)
+    {wch:16}, // Phone              (col 5)
+    {wch:35}, // Website            (col 6)
+    {wch:12}, // Google Rating      (col 7)
+    {wch:12}, // Review Count       (col 8)
+    {wch:14}, // Chat Status        (col 9)
+    {wch:30}, // Platform Detected  (col 10)
+    {wch: 7}, // Score              (col 11)
+    {wch:35}, // Facebook           (col 12)
+    {wch:35}, // Instagram          (col 13)
+    {wch:40}, // LinkedIn           (col 14)
+    {wch:25}, // Contact Name       (col 15)
+    {wch:25}, // Contact Job Title  (col 16)
+    {wch:35}, // Contact Email      (col 17)
+    {wch:11}, // Latitude           (col 18)
+    {wch:11}, // Longitude          (col 19)
   ];
 
   // Force text format on columns that must not be auto-converted by Excel:
-  // Phone (C), Website (D), Facebook (J), Instagram (K), LinkedIn (L), Email (O)
-  const textCols = [2, 3, 9, 10, 11, 14];
+  // Postcode (C), Postcode District (D), Postcode Area (E),
+  // Phone (F), Website (G), Facebook (M), Instagram (N), LinkedIn (O), Email (R)
+  const textCols = [2, 3, 4, 5, 6, 12, 13, 14, 17];
   const range    = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   for (let R = 1; R <= range.e.r; R++) { // row 0 = header, skip
     for (const C of textCols) {
