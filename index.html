@@ -565,6 +565,30 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 .history-page { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
 .history-empty { text-align:center; padding:4rem 2rem; color:var(--text3); font-size:0.88rem; }
 
+/* ── EXPORT DROPDOWN ── */
+.export-wrap { position: relative; display: inline-flex; }
+.export-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 0.5rem; min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.export-filter-row {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-size: 0.74rem; color: var(--text2); cursor: pointer;
+  padding: 0.3rem 0.5rem 0.55rem;
+  border-bottom: 1px solid var(--border); margin-bottom: 0.35rem;
+}
+.export-filter-row input { accent-color: var(--orange); cursor: pointer; flex-shrink: 0; }
+.export-opt {
+  display: flex; align-items: center; gap: 0.45rem; width: 100%;
+  font-family: var(--sans); font-size: 0.78rem; font-weight: 500;
+  padding: 0.48rem 0.6rem; border-radius: 7px; border: none;
+  background: transparent; color: var(--text); cursor: pointer;
+  transition: background 0.12s; text-align: left;
+}
+.export-opt:hover { background: var(--surface2); }
+
 /* ── VIEW TOGGLE (Table | Map) ── */
 .view-toggle {
   display: flex; gap: 2px;
@@ -721,7 +745,17 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
         <button class="view-btn" id="view-btn-map" onclick="setView('map')">Map</button>
       </div>
       <span class="result-count" id="table-count"></span>
-      <span style="margin-left:auto;font-family:var(--mono);font-size:0.65rem;color:var(--text3)" id="last-search-label"></span>
+      <div class="export-wrap" id="export-wrap" style="margin-left:auto">
+        <button class="btn btn-outline btn-sm" onclick="toggleExportMenu(event)">↓ Export</button>
+        <div class="export-menu" id="export-menu" style="display:none">
+          <label class="export-filter-row">
+            <input type="checkbox" id="export-filter-chk"> Export filtered view only
+          </label>
+          <button class="export-opt" onclick="doExport('csv')">📄 Download CSV</button>
+          <button class="export-opt" onclick="doExport('xlsx')">📊 Download Excel (.xlsx)</button>
+        </div>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text3)" id="last-search-label"></span>
     </div>
     <div id="table-area">
       <div class="empty-state">
@@ -961,6 +995,7 @@ td { padding: 0.75rem 1rem; vertical-align: middle; font-size: 0.82rem; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ════════════════════════════════════════════════════
 // PLATFORM DEFINITIONS
@@ -1151,6 +1186,10 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCostKPI();
   renderTable();
   renderHistory();
+  // Close export dropdown when clicking outside it
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#export-wrap')) closeExportMenu();
+  });
 });
 
 // ════════════════════════════════════════════════════
@@ -1459,6 +1498,8 @@ async function runSearch() {
       phone,
       lat: place.geometry?.location?.lat() ?? null,
       lng: place.geometry?.location?.lng() ?? null,
+      rating: place.rating ?? null,
+      userRatingsTotal: place.user_ratings_total ?? null,
       chatStatus: 'pending', tier: null, platforms: [],
       score: 0, stage: 'Not Contacted', pushedToHS: false, notes: '',
       searchLabel: sessionLabel, searchDate: new Date().toLocaleDateString('en-GB'),
@@ -2420,6 +2461,14 @@ async function openHunterModal(idx, source) {
     renderHistory();
 
     _hunterContacts = data.contacts || [];
+    // Persist the best contact (top of tier-sorted list) on the record for export
+    if (_hunterContacts.length) {
+      const best = _hunterContacts[0];
+      r.contactName     = [best.firstName, best.lastName].filter(Boolean).join(' ') || '';
+      r.contactJobTitle = best.jobTitle  || '';
+      r.contactEmail    = best.email     || '';
+      saveToStorage();
+    }
     if (!_hunterContacts.length) {
       document.getElementById('hunter-empty').style.display = 'block';
       return;
@@ -2628,6 +2677,183 @@ async function pushSelectedContacts() {
   if (errors === 0)       toast(`${pushed} contact${pushed > 1 ? 's' : ''} added to HubSpot ✓`, 'success');
   else if (pushed > 0)    toast(`${pushed} added, ${errors} failed`, 'error');
   else                    toast('Failed to push contacts to HubSpot', 'error');
+}
+
+// ════════════════════════════════════════════════════
+// EXPORT (CSV / XLSX)
+// ════════════════════════════════════════════════════
+
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('export-menu');
+  if (menu) menu.style.display = menu.style.display === 'none' ? '' : 'none';
+}
+
+function closeExportMenu() {
+  const menu = document.getElementById('export-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+// Returns the rows that match the current filter + search box, same logic as renderTable/renderMap.
+function getFilteredRows() {
+  const search = (document.getElementById('search-box')?.value || '').toLowerCase();
+  return results.filter(r => {
+    if (activeFilter === 'none'       && r.chatStatus !== 'none') return false;
+    if (activeFilter === 'basic'      && !(r.chatStatus==='competitor' && r.tier==='basic')) return false;
+    if (activeFilter === 'competitor' && !(r.chatStatus==='competitor' && (r.tier==='mid'||r.tier==='enterprise'||r.tier==='competitor'))) return false;
+    if (activeFilter === 'hot'        && r.score < 70) return false;
+    if (activeFilter === 'blocked'    && r.chatStatus !== 'blocked') return false;
+    if (search && !r.name.toLowerCase().includes(search) && !(r.website||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+}
+
+// Readable chat-status string for export cells.
+function exportChatStatus(r) {
+  if (r.chatStatus === 'none')    return 'No Chatbot';
+  if (r.chatStatus === 'blocked') return 'Blocked';
+  if (r.chatStatus === 'pending') return 'Scanning';
+  if (r.tier === 'basic')        return 'Basic Chat';
+  if (r.tier === 'mid' || r.tier === 'competitor') return 'Competitor';
+  if (r.tier === 'enterprise')   return 'Enterprise';
+  return '';
+}
+
+// Strip chars that are unsafe in filenames and collapse whitespace.
+function buildFilename(ext) {
+  const session = sessions.find(s => s.id === activeSessionId);
+  const label = (session?.label || 'export')
+    .replace(/[·•]/g, '-')
+    .replace(/[^a-zA-Z0-9 _-]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '-')
+    .replace(/_+/g, '_')
+    .slice(0, 60)
+    .replace(/^[_-]+|[_-]+$/g, '');
+  const date = new Date().toISOString().slice(0, 10);
+  return `boris-prospect_${label}_${date}.${ext}`;
+}
+
+// Build the 2-D array (header + data rows) used by both download functions.
+function buildExportData(rows) {
+  const HEADERS = [
+    'Company Name', 'Address', 'Phone', 'Website',
+    'Google Rating', 'Review Count', 'Chat Status', 'Platform Detected', 'Score',
+    'Facebook', 'Instagram', 'LinkedIn',
+    'Contact Name', 'Contact Job Title', 'Contact Email',
+    'Latitude', 'Longitude',
+  ];
+
+  const dataRows = rows.map(r => {
+    const liSlug = (r.name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const liUrl  = liSlug ? `https://linkedin.com/company/${liSlug}` : '';
+    return [
+      r.name            || '',
+      r.address         || '',
+      r.phone           || '',
+      r.website         ? 'https://' + r.website : '',
+      r.rating          != null ? r.rating          : '',
+      r.userRatingsTotal!= null ? r.userRatingsTotal: '',
+      exportChatStatus(r),
+      (r.platforms      || []).join(', '),
+      r.score           != null ? r.score           : '',
+      r.facebookUrl     || '',
+      r.instagramUrl    || '',
+      liUrl,
+      r.contactName     || '',
+      r.contactJobTitle || '',
+      r.contactEmail    || '',
+      r.lat             != null ? r.lat             : '',
+      r.lng             != null ? r.lng             : '',
+    ];
+  });
+
+  return [HEADERS, ...dataRows];
+}
+
+function downloadCsv(aoa, filename) {
+  // RFC 4180 CSV — wrap every cell in double-quotes, escape inner quotes.
+  // Leading with UTF-8 BOM so Excel auto-detects the encoding.
+  const csv = aoa.map(row =>
+    row.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')
+  ).join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast(`Exported ${aoa.length - 1} companies to CSV ✓`, 'success');
+}
+
+function downloadXlsx(aoa, filename) {
+  if (typeof XLSX === 'undefined') {
+    toast('SheetJS library not loaded — try refreshing the page', 'error');
+    return;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Column widths (in characters)
+  ws['!cols'] = [
+    {wch:30}, // Company Name
+    {wch:40}, // Address
+    {wch:16}, // Phone
+    {wch:35}, // Website
+    {wch:12}, // Google Rating
+    {wch:12}, // Review Count
+    {wch:14}, // Chat Status
+    {wch:30}, // Platform Detected
+    {wch: 7}, // Score
+    {wch:35}, // Facebook
+    {wch:35}, // Instagram
+    {wch:40}, // LinkedIn
+    {wch:25}, // Contact Name
+    {wch:25}, // Contact Job Title
+    {wch:35}, // Contact Email
+    {wch:11}, // Latitude
+    {wch:11}, // Longitude
+  ];
+
+  // Force text format on columns that must not be auto-converted by Excel:
+  // Phone (C), Website (D), Facebook (J), Instagram (K), LinkedIn (L), Email (O)
+  const textCols = [2, 3, 9, 10, 11, 14];
+  const range    = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  for (let R = 1; R <= range.e.r; R++) { // row 0 = header, skip
+    for (const C of textCols) {
+      const ref = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[ref]) continue;
+      ws[ref].t = 's'; // string
+      ws[ref].z = '@'; // Excel text format
+    }
+  }
+
+  // Bold the header row (SheetJS CE may ignore .s, but it's harmless)
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const ref = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (ws[ref]) ws[ref].s = { font: { bold: true } };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Results');
+  XLSX.writeFile(wb, filename);
+  toast(`Exported ${aoa.length - 1} companies to Excel ✓`, 'success');
+}
+
+function doExport(format) {
+  closeExportMenu();
+  if (!results.length) return toast('No results to export', 'error');
+
+  const useFiltered = document.getElementById('export-filter-chk')?.checked;
+  const rows        = useFiltered ? getFilteredRows() : results;
+
+  if (!rows.length) return toast('No rows match the current filter', 'error');
+
+  const aoa      = buildExportData(rows);
+  const filename = buildFilename(format);
+
+  if (format === 'csv')  downloadCsv(aoa, filename);
+  else                   downloadXlsx(aoa, filename);
 }
 
 </script>
